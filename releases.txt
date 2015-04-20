@@ -1,0 +1,70 @@
+Current ToDo
+ - Test all Cisco config files
+ - Add text section
+ - "network" in alias?
+ - Fix issue when merging groups. Maybe add a "if exist" before adding it instead of merging.
+ 
+Known limitations
+ - DBEdit cannot import output if it was generated from a Windows Machine
+ - The script cannot add new firewall rules. It can only update currently existing one.
+ - The script support only tcp, udp and icmp protocols (Doesn't support rpc)
+ - The script support only Accept and Drop actions
+ - The script support only None and Log tracking
+ - The script does not support "Install On" field yet.
+ - The script does not support "VPN" field yet.
+ - The script create only static NAT rules (not dynamic ones)
+
+v0.08 - 2015-04-17
+Features:
+ - Fixed several redundancy bugs with "any" objects
+ - Fixed a bug where "dest-unreach" and "echo" icmp messages were not imported properly
+ - Moved some dictionaries to config.py
+ - The script now support policy and installOn arguments
+ - Fixed a bug where a mask was imported as subnet
+ 
+v0.07 - 2015-04-16
+Features:
+ - Fixed multiple duplicate ports
+ - Fixed multiple duplicate source
+ - Fix a bug where "any4" is created as an object
+ - Fixed a bug where "host" and "network" identifier were imported as objects
+
+v0.06 - 2015-04-15
+Features:
+ - Fixed bug with comments
+ - Fixed a bug where a CiscoRange was imported as a CiscoName
+ - Fixed a bug where a CiscoHost was sometimes added as a CiscoNet
+ - Removed some prefix/suffix characters in the comment fields
+ - Added _fixDuplicateSubnet() to delete duplicate subnets
+ - Added _fixDuplicateRange() to delete duplicate subnets
+ - Changed order of _fixDuplicateName() because it was causing issues.
+ - Added support for nat rules (static only)
+ - Fixed a bug where "any" port was not flagged as "alreadyExist"
+ - Fixed a bug where some character crash the import if a comments field contain bad chars (such as :)
+ - Added a function to merge redundant rules
+ 
+v0.05 - 2015-04-14
+Features:
+ - Fixed several issues
+ - Added a function to sanitize illegal words and characters
+ - Added the "any" host object and service object
+ - Added a way to print all objects
+ 
+v0.04 - 2015-04-13
+Features:
+ - Migrate a FW rule
+ - Fixed several issues
+ - Added a function to import all checkpoint ports in XML format.
+
+v0.03 - 2015-04-09
+Features:
+ - Migrate a port, port-group
+ 
+v0.02 - 2015-04-09
+Features:
+ - Migrate a host, subnet, range, network-group
+ 
+v0.01 - 2015-04-08
+Features:
+ - Migrate a "name"
+ 
