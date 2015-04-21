@@ -1,8 +1,8 @@
 Current ToDo
- - Test all Cisco config files
  - Add text section
- - "network" in alias?
  - Fix issue when merging groups. Maybe add a "if exist" before adding it instead of merging.
+ - Fix this: #[-] Warning: Could not find instance "interface" (dynamic). The script will create it.
+ 
  
 Known limitations
  - DBEdit cannot import output if it was generated from a Windows Machine
@@ -14,6 +14,12 @@ Known limitations
  - The script does not support "VPN" field yet.
  - The script create only static NAT rules (not dynamic ones)
 
+v 0.09 - 2015-04-20 
+Features:
+ - Worked on a procedure
+ - Fixed the "network" alias on CiscoHost
+ - Updated text output
+ 
 v0.08 - 2015-04-17
 Features:
  - Fixed several redundancy bugs with "any" objects
@@ -21,7 +27,7 @@ Features:
  - Moved some dictionaries to config.py
  - The script now support policy and installOn arguments
  - Fixed a bug where a mask was imported as subnet
- 
+
 v0.07 - 2015-04-16
 Features:
  - Fixed multiple duplicate ports

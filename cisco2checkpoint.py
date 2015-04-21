@@ -46,7 +46,7 @@ from config import *
 
 # System imports
 import argparse
-import os.path
+import os
 
 # Get args
 description = '''GoSecure cisco2checkpoint migration tool.\n
@@ -143,13 +143,14 @@ if args.search != '':
 		else:
 			print(MSG_PREFIX+'No object found')
 elif args.export:
+	result = ''
 	if args.filter == None:
 		if args.format == 'text':
 			print(MSG_PREFIX+'Exporting to text format')
-			print(c2c.getAllObjs())
+			result = c2c.getAllObjs()
 		elif args.format == 'dbedit':
 			print(MSG_PREFIX+'Exporting to dbedit format')
-			print(c2c.toDBEdit())
+			result = c2c.toDBEdit()
 		else:
 			print(WARN_PREFIX+'Invalid format')
 	else:
@@ -157,13 +158,24 @@ elif args.export:
 			print(MSG_PREFIX+'Exporting to text format')
 			obj_list = c2c.findObjByType(args.filter)
 			if len(obj_list) > 0:
-				print(''.join([obj.toString() for obj in obj_list]))
+				result += ''.join([obj.toString() for obj in obj_list])
 			else:
 				print(MSG_PREFIX+'No object found')
 		elif args.format == 'dbedit':
 			print(MSG_PREFIX+'Operation not supported yet')
 		else:
 			print(WARN_PREFIX+'Invalid format')
+	
+	# Print summary
+	print(c2c.getSummary())
+
+	# Output
+	if args.stdout:
+		print(result)
+	else:
+		fd = os.open(args.output, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
+		os.write(fd,result)
+		os.close(fd)
 			
 elif args.summary:
 	print(MSG_PREFIX+'Generate Summary')

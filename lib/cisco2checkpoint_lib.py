@@ -75,7 +75,7 @@ class CiscoObject():
 			return str(self.desc.replace('"\/ ', '').replace(' \/"', ''))
 		
 	def addAlias(self,text):
-		if text != None and text != self.name:
+		if text != None and text != self.name and not text in self.alias:
 			#print('Add Alias: '+str(self.name)+' vs '+ text)
 			self.alias.append(text)
 		
@@ -204,7 +204,7 @@ class CiscoGroup(CiscoObject):
 			if C2C_DEBUG: print(WARN_PREFIX+'Warning: Found %i instances of "%s" (%s)' % (len(obj_list),name,type))
 			return obj_list[0]
 		else:
-			if C2C_DEBUG: print(WARN_PREFIX+'Warning: Could not find instance "%s" (%s). The script will create it.' % (name,type))
+			if C2C_DEBUG: print(WARN_PREFIX+'Warning: Could not find object "%s" (%s). The script will create it.' % (name,type))
 			return None
 			
 	def _createMemberObj(self, type, v1, v2=None, v3=None):
@@ -310,7 +310,7 @@ class CiscoName(CiscoObject):
 			if len(a) > 4:
 				self.desc = a[4]
 		self.dbClass = 'host_plain'
-		self.addAlias(self.ipAddr)
+		#self.addAlias(self.ipAddr)
 			
 	def toString(self, indent=''):
 		return indent+self.getClass()+"(name=%s,ipAddr=%s,desc=%s,alias=%s)\n" % (self.name,self.ipAddr,self.getDesc(),','.join(self.alias))
@@ -1131,6 +1131,15 @@ class CiscoFwRule(CiscoGroup):
 			return 'true'
 		else:
 			return 'false'
+	
+	def _getSrcToString(self):
+		return ';'.join([obj.name for obj in self.src])
+		
+	def _getDstToString(self):
+		return ';'.join([obj.name for obj in self.dst])
+		
+	def _getPortToString(self):
+		return ';'.join([obj.name for obj in self.port])
 		
 	def mergeWith(self, objToMerge):
 		for src in objToMerge.src:
@@ -1146,18 +1155,19 @@ class CiscoFwRule(CiscoGroup):
 		self.desc = self.getDesc()
 		self.desc += " "+objToMerge.getDesc()
 			
-	def toString(self, indent=''):
+	def toString(self, indent='', inclChild=True):
 		ret = ''
-		srcName = self.src.name if not isarray(self.src) else '<%i members>' % len(self.src)
-		dstName = self.dst.name if not isarray(self.dst) else '<%i members>' % len(self.dst)
-		portName = self.port.name if not isarray(self.port) else '<%i members>' % len(self.port)
+		srcName = self.src.name if not isarray(self.src) else self._getSrcToString()
+		dstName = self.dst.name if not isarray(self.dst) else self._getDstToString()
+		portName = self.port.name if not isarray(self.port) else self._getPortToString()
 		ret += indent+"FWRule(src=%s,dst=%s,port=%s,action=%s,pol=%s,inst=%s,desc=%s)\n" % (srcName,dstName,portName,self.action,self.policy,self.installOn,self.getDesc())
-		for src in self.src:
-			ret += indent+" Src:"+src.toString(' ')
-		for dst in self.dst:
-			ret += indent+" Dst:"+dst.toString(' ')
-		for port in self.port:
-			ret += indent+" Port:"+port.toString(' ')
+		if inclChild:
+			for src in self.src:
+				ret += indent+" Src:"+src.toString(' ')
+			for dst in self.dst:
+				ret += indent+" Dst:"+dst.toString(' ')
+			for port in self.port:
+				ret += indent+" Port:"+port.toString(' ')
 		return ret
 
 	def toDBEdit(self):
@@ -1320,7 +1330,7 @@ class Cisco2Checkpoint(CiscoObject):
 			self.rangeInCt += 1
 			
 	def _importNetGroups(self, groups):
-		print(MSG_PREFIX+'Importing all net groups.')
+		print(MSG_PREFIX+'Importing all net/host/range groups.')
 		self.netGrInCt = 0
 		for newGrp in groups:					
 			self.addObj(CiscoNetGroup(newGrp))	
@@ -1390,7 +1400,7 @@ class Cisco2Checkpoint(CiscoObject):
 		for icmpObj in [obj for obj in self.obj_list if obj.getClass() == 'CiscoIcmp']:
 			for i, j in ICMP_DIC.iteritems():
 				if icmpObj.name == j:
-					if C2C_DEBUG: print(WARN_PREFIX+'Adding "%s" alias to "%s"' % (i,j))
+					#if C2C_DEBUG: print(WARN_PREFIX+'Adding "%s" alias to "%s"' % (i,j))
 					icmpObj.addAlias(i)
 		
 	def _fixDuplicateNames(self):
@@ -1480,8 +1490,8 @@ class Cisco2Checkpoint(CiscoObject):
 	def _mergeRules(self, obj1, obj2):
 		# Merge in obj1. obj2 will be deleted.
 		#print(WARN_PREFIX+'  The following objects will be merged.')
-		#print(WARN_PREFIX+'%s' % obj1.toString('    '))
-		#print(WARN_PREFIX+'%s' % obj2.toString('    '))
+		print(WARN_PREFIX+'Merging: %s' % obj1.toString('', False))
+		print(WARN_PREFIX+'With: %s' % obj2.toString('', False))
 		obj1.mergeWith(obj2)
 	
 	def _cleanObj(self, objToKeep, objToDel):
@@ -1607,20 +1617,19 @@ class Cisco2Checkpoint(CiscoObject):
 	def getSummary(self):
 		# Print summary what was parsed.
 		print("""#
-#
 # Summary of the findings in "{0}"
 #
-# Number of hosts (before removing duplicates): {3}
-# Number of hosts (after removing duplicates): {4}
-# Number of subnet (before removing duplicates): {5}
-# Number of subnet (after removing duplicates): {6}
-# Number of range (before removing duplicates): {7}
-# Number of range (after removing duplicates): {8}
+# Number of hosts (before merge): {3}
+# Number of hosts (after merge): {4}
+# Number of subnet (before merge): {5}
+# Number of subnet (after merge): {6}
+# Number of range (before merge): {7}
+# Number of range (after merge): {8}
 # Number of subnet groups: {9}
 # Number of service groups: {10}
 # Number of nat rules: {11}
-# Number of fw rules (before removing duplicates): {12}
-# Number of fw rules (after removing duplicates): {13}
+# Number of fw rules (before merge): {12}
+# Number of fw rules (after merge): {13}
 #""".format( self.configFile, \
 			self.nameInCt, \
 			self.nameCt, \
