@@ -1,8 +1,6 @@
 Current ToDo
  - Add text section
- - Fix issue when merging groups. Maybe add a "if exist" before adding it instead of merging.
- - Fix this: #[-] Warning: Could not find instance "interface" (dynamic). The script will create it.
- 
+ - Fix this: #[-] Warning: Found 2 instances of "DM_INLINE_PROTOCOL_2" (port-group)
  
 Known limitations
  - DBEdit cannot import output if it was generated from a Windows Machine
@@ -14,12 +12,18 @@ Known limitations
  - The script does not support "VPN" field yet.
  - The script create only static NAT rules (not dynamic ones)
 
-v 0.09 - 2015-04-20 
+v0.10 - 2015-04-21
+Features:
+ - Fixed NAT issue where "interface" become a hide rule
+ - Written Cisco2CheckpointManager class that can interact with multiple config files
+ 
+ 
+v0.09 - 2015-04-20 
 Features:
  - Worked on a procedure
  - Fixed the "network" alias on CiscoHost
  - Updated text output
- 
+
 v0.08 - 2015-04-17
 Features:
  - Fixed several redundancy bugs with "any" objects

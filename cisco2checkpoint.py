@@ -41,7 +41,7 @@ sys.path.insert(0, 'lib')
 del sys
 
 # Project imports
-from cisco2checkpoint_lib import Cisco2Checkpoint
+from cisco2checkpoint_lib import Cisco2Checkpoint,Cisco2CheckpointManager
 from config import *
 
 # System imports
@@ -93,6 +93,8 @@ actGrp.add_argument('--summary', '-u', action='store_true', dest='summary', defa
 optGrp = parser.add_argument_group("Option", "Use any depending on chosen action")
 optGrp.add_argument('--ciscoFile', '-c', action='store', dest='ciscoFile', default='', \
               type=str, metavar='FILE', help='[Mandatory] Cisco config file to parse.')
+optGrp.add_argument('--ciscoDir', '-d', action='store', dest='ciscoDir', default='', \
+              type=str, metavar='DIR', help='config directory to parse. Will read only *.Config files')
 optGrp.add_argument('--policy', '-p', action='store', dest='policy', default=DEFAULT_POLICY, \
               type=str, help='The policy name. Relevant with --export only. Default: %s' % DEFAULT_POLICY)
 optGrp.add_argument('--installOn', '-i', action='append', dest='installOn', default=DEFAULT_INSTALLON, \
@@ -103,8 +105,8 @@ optGrp.add_argument('--cpPortsFile', action='store', dest='cpPortsFile', default
               type=str, metavar='FILE', help='Checkpoint xml port file to parse. Default: %s' % DEFAULT_CP_PORT_FILE)
 optGrp.add_argument('--output', '-o', action='store', dest='output', default=DEFAULT_OUTPUT_FILE, \
               type=str, metavar='FILE', help='Output file. Default: %s' % DEFAULT_OUTPUT_FILE)
-optGrp.add_argument('--startIndex', action='store', dest='startIndex', default=0, \
-              type=int, metavar='INDEX', help='Index to start importing firewall rules. Default: 0')
+optGrp.add_argument('--startIndex', action='store', dest='startIndex', default=FW_RULE_INDEX, \
+              type=int, metavar='INDEX', help='Index to start importing firewall rules. Default: %i' % FW_RULE_INDEX)
 optGrp.add_argument('--filter', action='append', dest='filter', default=None, \
               type=str, metavar='CLASS', help='Filter a class name, e.g. CiscoHost, CiscoPort, CiscoFwRule. Can use option several times.')
 optGrp.add_argument('--stdout', action='store_true', dest='stdout', default=False, \
@@ -115,15 +117,25 @@ args = parser.parse_args()
 if not os.path.isfile(str(args.cpPortsFile)):
 	print('Cannot find checkpoint port file: "%s"' % args.cpPortsFile)
 	exit(1)
-if not os.path.isfile(str(args.ciscoFile)):
-	print('Cannot find cisco config file: "%s"' % args.ciscoFile)	
+elif not ((args.ciscoFile and os.path.isfile(str(args.ciscoFile))) \
+  or (args.ciscoDir and os.path.isdir(args.ciscoDir))): # if dir was specified
+	print('You must specify either a file or a dir (see --ciscoFile and --ciscoDir)')	
 	exit(1)
-	
-c2c = Cisco2Checkpoint.getInstance()
-c2c.setDebug(args.debug)
-c2c.setPolicy(args.policy)
-c2c.setInstallOn(args.installOn)
-c2c.importConfig(args.cpPortsFile,args.ciscoFile)
+
+if args.ciscoFile != '':
+	c2c = Cisco2Checkpoint()
+	c2c.setDebug(args.debug)
+	c2c.setPolicy(args.policy)
+	c2c.setInstallOn(args.installOn)
+	c2c.setFWRuleIndex(args.startIndex)
+	c2c.importConfig(args.cpPortsFile,args.ciscoFile)
+elif args.ciscoDir != '':
+	c2c = Cisco2CheckpointManager()
+	c2c.setDebug(args.debug)
+	c2c.setPolicy(args.policy)
+	c2c.setInstallOn(args.installOn)
+	c2c.setFWRuleIndex(args.startIndex)
+	c2c.importConfig(args.cpPortsFile,args.ciscoDir)
 
 # Step 2: Process user request
 #try:

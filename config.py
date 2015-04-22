@@ -27,6 +27,16 @@ SUPPORTED_FLAGS = ['object-group', 'object', 'eq', 'log', 'host', 'any4', 'any']
 SUPPORTED_ANY_FLAGS = ['any', 'any4']
 FW_RULE_INDEX = 0
 
+HOST_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost']
+NETOBJ_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange']
+SVCOBJ_CLASSES = ['CiscoSinglePort','CiscoPortRange','CiscoPortGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
+ANY_CLASSES = ['CiscoAnyHost', 'CiscoAnyIcmp', 'CiscoAnyPort']
+
+# Classes that have a name (searchable by name)
+NETOBJ_NAMED_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange','CiscoNetGroup']
+SVCOBJ_NAMED_CLASSES = ['CiscoSinglePort','CiscoPortRange','CiscoPortGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
+
+
 EXCLUDE_PORTS = ['ssl_v3', 'ssh_version_2', 'ftp-bidir', 'ftp-pasv', 'ftp-port', \
 				'sip_tls_not_inspected', 'H323_any', 'H323_ras_only', 'snmp-read', \
 				'dhcp-relay', 'dhcp-req-localmodule', 'MSSQL_resolver']
@@ -37,6 +47,7 @@ ICMP_DIC = { 'unreachable' : 'dest-unreach', \
 			 
 ILLEGAL_DIC = { '' : '', \
 				  'All-' : 'All', \
+				  '-All' : 'All', \
 				  'In-Domain' : 'InDomain', \
 			  }	
 			  
@@ -76,3 +87,5 @@ PORT_DIC = { 'ftp-data' : '20', \
 		'pcanywhere-data' : '5631', \
 		'pcanywhere-status' : '5632', \
 		}	
+		
+CONFIG_FILE_SUFFIX = '.Config'
