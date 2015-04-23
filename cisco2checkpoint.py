@@ -83,12 +83,14 @@ parser.add_argument('--debug', action='store_true', dest='debug', default=False,
                     help='Run the tool in debug mode')
 
 actGrp = parser.add_argument_group("Action", "Select one of these action")
+actGrp.add_argument('--summary', '-u', action='store_true', dest='summary', default=False, \
+              help='Print a summary of what is parsed and what would be migrated.')
 actGrp.add_argument('--search', '-s',  action='store', dest='search', default='',\
               type=str, metavar='TEXT', help='Search for a specific object.')
 actGrp.add_argument('--export', '-e', action='store_true', dest='export', default=False, \
               help='Export configuration. Use --format to determine format.')
-actGrp.add_argument('--summary', '-u', action='store_true', dest='summary', default=False, \
-              help='Print a summary of what is parsed and what would be migrated.')
+actGrp.add_argument('--verify', action='store_true', dest='verify', default=False, \
+              help='Export configuration like --export but in text format and in a verifyable format.')
 
 optGrp = parser.add_argument_group("Option", "Use any depending on chosen action")
 optGrp.add_argument('--ciscoFile', '-c', action='store', dest='ciscoFile', default='', \
@@ -139,7 +141,10 @@ elif args.ciscoDir != '':
 
 # Step 2: Process user request
 #try:
-if args.search != '':
+if args.summary:
+	print(MSG_PREFIX+'Generate Summary')
+	print(c2c.getSummary())
+elif args.search != '':
 	if args.filter == None:
 		print(MSG_PREFIX+"Searching for an object. No filter")
 		obj_list = c2c.findObjByName(args.search)
@@ -188,23 +193,30 @@ elif args.export:
 		fd = os.open(args.output, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
 		os.write(fd,result)
 		os.close(fd)
-			
-elif args.summary:
-	print(MSG_PREFIX+'Generate Summary')
+elif args.verify:
+	result = ''
+	args.format = 'text'
+	
+	if args.filter == None:
+		print(MSG_PREFIX+'Exporting to verify format')
+		result = c2c.getAllObjs(True)
+	else:
+		print(MSG_PREFIX+'Exporting to verify format')
+		obj_list = c2c.findObjByType(args.filter)
+		if len(obj_list) > 0:
+			result += ''.join([obj.toString('', True) for obj in obj_list])
+		else:
+			print(MSG_PREFIX+'No object found')
+
+	# Print summary
 	print(c2c.getSummary())
+
+	# Output
+	if args.stdout:
+		print(result)
+	else:
+		fd = os.open(args.output, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
+		os.write(fd,result)
+		os.close(fd)
 else:
 	parser.print_help()
-		
-
-#print(c2c.findObjByName('sG_T_NetMonitoring')[0].toString())
-#for port in c2c.findPortByNum('tcp','443'):
-#	print(port.toString())
-#print(c2c.getAllPortGroups())
-#print(c2c.getAllNonNumPorts())
-#print(c2c.getAllHosts())
-#print(c2c.getNatRules())
-#print(c2c.findPortByName('In-Domain-TCP')[0].toString())
-#print(c2c.findObjByName('obj-205.192.153.10-205.192.153.254')[0].toString())
-#print(c2c.findObjByName('172.16.1.49'))
-#print(c2c.findRuleByDesc('Required by multiple services')[0].toString())
-#print(c2c.getFWRules())

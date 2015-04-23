@@ -31,6 +31,7 @@ HOST_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost']
 NETOBJ_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange']
 SVCOBJ_CLASSES = ['CiscoSinglePort','CiscoPortRange','CiscoPortGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
 ANY_CLASSES = ['CiscoAnyHost', 'CiscoAnyIcmp', 'CiscoAnyPort']
+GROUP_CLASSES = ['CiscoNetGroup', 'CiscoPortGroup']
 
 # Classes that have a name (searchable by name)
 NETOBJ_NAMED_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange','CiscoNetGroup']
@@ -46,9 +47,9 @@ ICMP_DIC = { 'unreachable' : 'dest-unreach', \
 			 'echo' : 'echo-request' }
 			 
 ILLEGAL_DIC = { '' : '', \
-				  'All-' : 'All', \
-				  '-All' : 'All', \
-				  'In-Domain' : 'InDomain', \
+				  'All-' : 'All_', \
+				  '-All' : '_All', \
+				  'In-Domain' : 'In_Domain', \
 			  }	
 			  
 PORT_DIC = { 'ftp-data' : '20', \

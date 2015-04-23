@@ -16,6 +16,19 @@ def isipaddress(var):
 	except socket.error:
 		return False
 		
+def make_flat(l):
+    res = []
+    iters_stack = [iter(l)]
+    while iters_stack:
+        for e in iters_stack[-1]:
+            if isinstance(e, (tuple,list)):
+                iters_stack.append(iter(e))
+                break
+            res.append(e)
+        else:
+            iters_stack.pop()
+    return res
+	
 class C2CException(Exception):
 	pass
 	
@@ -29,10 +42,13 @@ class CiscoObject():
 						# Ex: 
 	alreadyExist = False		# Flag to determine if it already exist in checkpoint database
 	c2c = None			# Reference to c2c object (parent) 
+	ciscoLines = []	# Cisco line that was used to import the object (useful for verify)
 	
-	def __init__(self, c2c, name, desc=''):
+	def __init__(self, c2c, ciscoLine, name, desc=''):
 		n = copy.deepcopy(name)
 		self.name = self._sanitizeIllegalWords(self._sanitizeName(name))
+		self.ciscoLines = []
+		self.ciscoLines.append(ciscoLine)
 		self.desc = desc
 		self.c2c = c2c
 		self.alias = []
@@ -76,14 +92,33 @@ class CiscoObject():
 			return ''
 		else:
 			return str(self.desc.replace('"\/ ', '').replace(' \/"', ''))
-		
+			
+	def getVerify(self):
+		if len(self.ciscoLines) == 0:
+			return ''
+		else:
+			ret = ''
+			for line in self.ciscoLines:
+				if line != None:
+					ret += " Verify: %s \n" % str(line)
+			return ret
+			
 	def addAlias(self,text,indent=''):
 		if text != None and text != self.name and not text in self.alias:
 			if C2C_DEBUG: print(WARN_PREFIX+indent+'Adding Alias "%s" on object "%s"' % (text, str(self.name)))
 			self.alias.append(text)
+	
+	def addCiscoLine(self,text,indent=''):
+		if text != None and not text in self.ciscoLines:
+			#if C2C_DEBUG: print(WARN_PREFIX+indent+'Adding CiscoLine "%s" on object "%s"' % (text, str(self.name)))
+			self.ciscoLines.append(text)
 		
-	def toString(self, indent=''):
-		return indent+self.getClass()+'(name=%s,desc=%s)' % (self.name,self.getDesc())
+	def toString(self, indent='', verify=False):
+		ret = ''
+		ret += indent+self.getClass()+'(name=%s,desc=%s)' % (self.name,self.getDesc())
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
+		return ret
 		
 	def toDBEdit(self):
 		return ''	
@@ -96,7 +131,7 @@ class CiscoPort(CiscoObject):
 	proto = None
 	
 	def __init__(self, c2c, name, alreadyExist=False):
-		CiscoObject.__init__(self, c2c, name)
+		CiscoObject.__init__(self, c2c, None, name)
 		self.alreadyExist = alreadyExist
 		
 	def _toDBEditType(self):
@@ -115,9 +150,9 @@ class CiscoPort(CiscoObject):
 class CiscoGroup(CiscoObject):				
 	members = []
 	
-	def __init__(self, c2c, name):
+	def __init__(self, c2c, ciscoName, name):
 		self.members = []
-		CiscoObject.__init__(self, c2c, name)
+		CiscoObject.__init__(self, c2c, ciscoName, name)
 		
 	def _convertPort(self, text):
 		for i, j in PORT_DIC.iteritems():
@@ -306,20 +341,24 @@ class CiscoName(CiscoObject):
 	
 	def __init__(self, c2c, parsedObj, name=None, ipAddr=None, desc=None, alreadyExist=False):
 		if name != None:
-			CiscoObject.__init__(self, c2c, name, desc)
+			CiscoObject.__init__(self, c2c, None, name, desc)
 			self.ipAddr = ipAddr
 			self.alreadyExist = alreadyExist
 		else:
 			a = parsedObj.text.split(' ', 4)
-			CiscoObject.__init__(self, c2c, a[2])
+			CiscoObject.__init__(self, c2c, parsedObj.text, a[2])
 			self.ipAddr = a[1]
 			if len(a) > 4:
 				self.desc = a[4]
 		self.dbClass = 'host_plain'
 		#self.addAlias(self.ipAddr)
 			
-	def toString(self, indent=''):
-		return indent+self.getClass()+"(name=%s,ipAddr=%s,desc=%s,alias=%s)\n" % (self.name,self.ipAddr,self.getDesc(),','.join(self.alias))
+	def toString(self, indent='', verify=False):
+		ret = ''
+		ret += indent+self.getClass()+"(name=%s,ipAddr=%s,desc=%s,alias=%s)\n" % (self.name,self.ipAddr,self.getDesc(),','.join(self.alias))
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
+		return ret
 
 	def toDBEdit(self):
 		return '''# Creating new host: {0}
@@ -347,8 +386,12 @@ class CiscoHost(CiscoName):
 				self.desc = child['description'][0]
 			self.alreadyExist = alreadyExist
 					
-	def toString(self,indent=''):
-		return indent+self.getClass()+"(name=%s,ipAddr=%s,desc=%s,alias=%s)\n" % (self.name,self.ipAddr,self.getDesc(),','.join(self.alias))
+	def toString(self,indent='',verify=False):
+		ret = ''
+		ret += indent+self.getClass()+"(name=%s,ipAddr=%s,desc=%s,alias=%s)\n" % (self.name,self.ipAddr,self.getDesc(),','.join(self.alias))
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
+		return ret
 		
 	def toDBEditElement(self, groupName):
 		return "addelement network_objects {0} '' network_objects:{1}\n".format(groupName, self.name)
@@ -369,12 +412,12 @@ class CiscoNet(CiscoObject):
 	
 	def __init__(self, c2c, parsedObj, name=None, ipAddr=None, mask=None, desc=None):
 		if name != None:
-			CiscoObject.__init__(self, c2c, name, desc)
+			CiscoObject.__init__(self, c2c, None, name, desc)
 			self.ipAddr = ipAddr
 			self.mask = mask
 		else:
 			a = parsedObj.text.split(' ', 2)
-			CiscoObject.__init__(self, c2c, a[2])
+			CiscoObject.__init__(self, c2c, parsedObj.text, a[2])
 			child = self._parseChildren(parsedObj)
 			self.ipAddr,self.mask = child['subnet'][0].split(' ',1)
 			if child.has_key('description'):
@@ -382,8 +425,12 @@ class CiscoNet(CiscoObject):
 
 		self.dbClass = 'network'
 			
-	def toString(self, indent=''):
-		return indent+self.getClass()+"(name=%s,ipAddr=%s/%s,desc=%s,alias=%s)\n" % (self.name,self.ipAddr,self.mask,self.getDesc(),', '.join(self.alias))
+	def toString(self, indent='', verify=False):
+		ret = ''
+		ret += indent+self.getClass()+"(name=%s,ipAddr=%s/%s,desc=%s,alias=%s)\n" % (self.name,self.ipAddr,self.mask,self.getDesc(),', '.join(self.alias))
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
+		return ret
 
 	def toDBEdit(self):
 		return '''# Creating new subnet: {0}
@@ -404,7 +451,7 @@ class CiscoRange(CiscoObject):
 	
 	def __init__(self, c2c, parsedObj):
 		a = parsedObj.text.split(' ', 2)
-		CiscoObject.__init__(self, c2c, a[2])
+		CiscoObject.__init__(self, c2c, parsedObj.text, a[2])
 		
 		child = self._parseChildren(parsedObj)
 		self.first,self.last = child['range'][0].split(' ',1)
@@ -413,8 +460,12 @@ class CiscoRange(CiscoObject):
 				
 		self.dbClass = 'address_range'
 			
-	def toString(self, indent=''):
-		return indent+self.getClass()+"(name=%s,ipRange=%s/%s,desc=%s)\n" % (self.name,self.first,self.last,self.getDesc())
+	def toString(self, indent='', verify=False):
+		ret = ''
+		ret += indent+self.getClass()+"(name=%s,ipRange=%s/%s,desc=%s)\n" % (self.name,self.first,self.last,self.getDesc())
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
+		return ret
 
 	def toDBEdit(self):
 		return '''# Creating new range: {0}
@@ -453,8 +504,12 @@ class CiscoSinglePort(CiscoPort):
 			a = parsedObj.text.split(' ', 2)
 			self.port = a[2]
 
-	def toString(self, indent=''):
-		return indent+self.getClass()+"(name=%s,port=%s,desc=%s,alias=%s)\n" % (self.name,self.port,self.getDesc(),', '.join(self.alias))
+	def toString(self, indent='', verify=False):
+		ret = ''
+		ret += indent+self.getClass()+"(name=%s,port=%s,desc=%s,alias=%s)\n" % (self.name,self.port,self.getDesc(),', '.join(self.alias))
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
+		return ret
 
 	def toDBEdit(self):
 		return '''# Creating new port: {1}
@@ -502,8 +557,12 @@ class CiscoPortRange(CiscoPort):
 			self.first = a[2]
 			self.last = a[3]
 		
-	def toString(self, indent=''):
-		return indent+self.getClass()+"(name=%s,port=%s-%s,desc=%s)\n" % (self.name,self.first,self.last,self.getDesc())
+	def toString(self, indent='', verify=False):
+		ret = ''
+		ret += indent+self.getClass()+"(name=%s,port=%s-%s,desc=%s)\n" % (self.name,self.first,self.last,self.getDesc())
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
+		return ret
 		
 	def toDBEdit(self):
 		return '''# Creating new port range: {1}
@@ -523,8 +582,12 @@ class CiscoProto(CiscoPort):
 		CiscoPort.__init__(self, c2c, name, alreadyExist)
 		self.desc = desc
 
-	def toString(self, indent=''):
-		return indent+self.getClass()+"(name=%s,desc=%s,alias=%s)\n" % (self.name,self.getDesc(),', '.join(self.alias))
+	def toString(self, indent='', verify=False):
+		ret = ''
+		ret += indent+self.getClass()+"(name=%s,desc=%s,alias=%s)\n" % (self.name,self.getDesc(),', '.join(self.alias))
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
+		return ret
 
 	def toDBEdit(self):
 		return ''
@@ -565,7 +628,7 @@ class CiscoNetGroup(CiscoGroup):
 	
 	def __init__(self, c2c, parsedObj):
 		a = parsedObj.text.split(' ', 2)
-		CiscoGroup.__init__(self, c2c, a[2])
+		CiscoGroup.__init__(self, c2c, parsedObj.text, a[2])
 		self.dbClass = 'network_object_group'
 		
 		child = self._parseChildren(parsedObj)
@@ -595,10 +658,12 @@ class CiscoNetGroup(CiscoGroup):
 		if child.has_key('description'):
 			self.desc = child['description'][0]
 		
-	def toString(self, indent=''):
+	def toString(self, indent='', verify=False):
 		ret = indent+self.getClass()+"(name=%s,desc=%s,nbMembers=%i)\n" % (self.name,self.getDesc(),len(self.members))
 		for member in self.members:
 			ret += indent+' '+member.toString(indent)
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
 		return ret
 
 	def toDBEdit(self):
@@ -626,7 +691,7 @@ class CiscoPortGroup(CiscoGroup):
 		a = parsedObj.text.split(' ', 3)
 		grpType = a[1]
 		name = a[2]
-		CiscoGroup.__init__(self, c2c, name)
+		CiscoGroup.__init__(self, c2c, parsedObj.text, name)
 		self.dbClass = 'service_group'
 		
 		if grpType == 'protocol':
@@ -768,10 +833,12 @@ class CiscoPortGroup(CiscoGroup):
 		if child.has_key('description'):
 			self.desc = child['description'][0]
 		
-	def toString(self, indent=''):
+	def toString(self, indent='', verify=False):
 		ret = indent+self.getClass()+"(name=%s,desc=%s,nbMembers=%i)\n" % (self.name,self.getDesc(),len(self.members))
 		for member in self.members:
 			ret += indent+' '+member.toString(indent)
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
 		return ret
 
 	def toDBEdit(self):
@@ -811,7 +878,7 @@ class CiscoNatRule(CiscoGroup):
 	
 	def __init__(self, c2c, parsedObj, installOn):
 		cmd,id,nattedObjName = parsedObj.text.split(' ', 2)
-		CiscoGroup.__init__(self, c2c, nattedObjName)
+		CiscoGroup.__init__(self, c2c, parsedObj.text, nattedObjName)
 		self.dbClass = ''
 		self.installOn = installOn
 		
@@ -846,10 +913,14 @@ class CiscoNatRule(CiscoGroup):
 		if child.has_key('description'):
 			self.desc = child['description'][0]
 		
-	def toString(self, indent=''):
+	def toString(self, indent='', verify=False):
 		extName = ''
 		if self.externalObj != None: extName = self.externalObj.name 
-		return indent+self.getClass()+"(Type=%s,InternalIP=%s,ExternalIP=%s,alias=%s)\n" % (self.type,self.internalObj.name,extName,','.join(self.alias))
+		ret = ''
+		ret += indent+self.getClass()+"(Type=%s,InternalIP=%s,ExternalIP=%s,alias=%s)\n" % (self.type,self.internalObj.name,extName,','.join(self.alias))
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
+		return ret
 
 	def toDBEdit(self):
 		if self.type == 'hide':
@@ -905,7 +976,7 @@ class CiscoFwRule(CiscoGroup):
 	def __init__(self, c2c, parsedObj, remark=None, policy=None, installOn=None):
 		# access-list perim extended permit tcp object-group In-Domain_Servers object-group DM_INLINE_NETWORK_2 object-group In-Domain-TCP 
 		a = parsedObj.text.split(' ', 4)
-		CiscoGroup.__init__(self, c2c, '')
+		CiscoGroup.__init__(self, c2c, parsedObj.text, '')
 		self.desc = remark
 		self.policy = policy
 		self.installOn = installOn
@@ -1196,8 +1267,10 @@ class CiscoFwRule(CiscoGroup):
 		
 		self.desc = self.getDesc()
 		self.desc += " "+objToMerge.getDesc()
+		for line in objToMerge.ciscoLines:
+			self.addCiscoLine(line)
 			
-	def toString(self, indent='', inclChild=True):
+	def toString(self, indent='', verify=False, inclChild=True):
 		ret = ''
 		srcName = self.src.name if not isarray(self.src) else self._getSrcToString()
 		dstName = self.dst.name if not isarray(self.dst) else self._getDstToString()
@@ -1211,6 +1284,8 @@ class CiscoFwRule(CiscoGroup):
 				ret += indent+" Dst:"+dst.toString(' ')
 			for port in self.port:
 				ret += indent+" Port:"+port.toString(' ')
+		if verify and self.getVerify():
+			ret += indent+self.getVerify()
 		return ret
 
 	def toDBEdit(self):
@@ -1283,9 +1358,11 @@ class CiscoParser():
 					
 	def getPortGroups(self):
 		return [obj for obj in self.parse.find_objects(r"^object-group\sservice")] + \
-				[obj for obj in self.parse.find_objects(r"^object-group\sicmp-type")] + \
-				[obj for obj in self.parse.find_objects(r"^object-group\sprotocol")]
-	
+				[obj for obj in self.parse.find_objects(r"^object-group\sicmp-type")]
+					
+	def getProtoGroups(self):
+		return [obj for obj in self.parse.find_objects(r"^object-group\sprotocol")]
+				
 	def getNatRules(self):
 		return [obj for obj in self.parse.find_objects(r"^object\snetwork") \
 					if obj.re_search_children(r"nat")]	
@@ -1323,7 +1400,7 @@ class Cisco2Checkpoint(CiscoObject):
 	def __init__(self):
 		pass
 		
-	def importConfig(self,xmlPortsFile,configFile):
+	def importConfig(self,xmlPortsFile,configFile,loadFwRules=True):
 		self.obj_list = []
 		self.configFile = configFile
 		self.parser = CiscoParser()
@@ -1332,18 +1409,19 @@ class Cisco2Checkpoint(CiscoObject):
 		self._importHosts(self.parser.getHostObjs())
 		self._importNets(self.parser.getNetObjs())
 		self._importRanges(self.parser.getRangeObjs())
-		#self._importNames(self.parser.getNameObjs())
+		#self._importNames(self.parser.getNameObjs())		# Names are Legacy. Do not import as objects.
 		self._fixDuplicateNames()
 		self._fixDuplicateIp()
 		self._fixDuplicateSubnet()
 		self._fixDuplicateRange()
 		self._importCheckpointPorts(xmlPortsFile)
 		self._importNetGroups(self.parser.getNetGroups())	
-		#self._fixDuplicateNetGroups()					# Need to fix before uncomment.
 		self._importPortGroups(self.parser.getPortGroups())
+		self._importProtoGroups(self.parser.getProtoGroups())
 		self._importNatRules(self.parser.getNatRules())
-		self._importFWRules(self.parser.getFwRules())
-		self._fixFwRuleRedundancy()
+		if loadFwRules:
+			self._importFWRules(self.parser.getFwRules())
+			self._fixFwRuleRedundancy()
 		
 		self.netGrCt = len(self.findObjByType(['CiscoNetGroup']))	# Remove this 
 
@@ -1388,6 +1466,18 @@ class Cisco2Checkpoint(CiscoObject):
 		for newGrp in groups:		
 			self.addObj(CiscoPortGroup(self, newGrp))		
 			self.portGrCt += 1
+			
+	def _importProtoGroups(self, groups):
+		print(MSG_PREFIX+'Importing all protocol groups.')
+		for newGrp in groups:		
+			obj = CiscoPortGroup(self, newGrp)
+			if 'any' in [member.name for member in obj.members]:
+				self.addObj(member)
+				self.portGrCt += 1
+			#else:
+			#	print('WTF: '+obj.toString())
+			#	self.addObj(obj)
+			
 			
 	def _importNatRules(self, rules):
 		print(MSG_PREFIX+'Importing all NAT rules.')
@@ -1482,14 +1572,6 @@ class Cisco2Checkpoint(CiscoObject):
 				foundList = self.findRangeByAddr(obj.first, obj.last)
 				self._fixDuplicate(foundList, obj.first+'-'+obj.last, obj.getClass())
 		self.rangeCt = len(self.findObjByType(['CiscoRange']))
-
-	def _fixDuplicateNetGroups(self):
-		print(MSG_PREFIX+'Fixing duplicate network groups')
-		for obj in self.obj_list:
-			if obj.getClass() in ['CiscoNetGroup']:
-				foundList = self.findDuplicateNetGroup(obj)
-				self._fixDuplicate(foundList, obj.name, obj.getClass())
-		self.netGrCt = len(self.findObjByType(['CiscoNetGroup']))
 		
 	def _fixDuplicate(self, foundList, objName, objType):
 		if len(foundList) == 1:
@@ -1537,15 +1619,17 @@ class Cisco2Checkpoint(CiscoObject):
 	def _mergeRules(self, obj1, obj2):
 		# Merge in obj1. obj2 will be deleted.
 		#print(WARN_PREFIX+'  The following objects will be merged.')
-		if C2C_DEBUG: print(WARN_PREFIX+'Merging: %s' % obj1.toString('', False))
-		if C2C_DEBUG: print(WARN_PREFIX+'With:    %s' % obj2.toString('', False))
+		if C2C_DEBUG: print(WARN_PREFIX+'Merging: %s' % obj1.toString('', False, False))
+		if C2C_DEBUG: print(WARN_PREFIX+'With:    %s' % obj2.toString('', False, False))
 		obj1.mergeWith(obj2)
-		if C2C_DEBUG: print(WARN_PREFIX+'Result:  %s' % obj1.toString('', False))
+		if C2C_DEBUG: print(WARN_PREFIX+'Result:  %s' % obj1.toString('', False, False))
 	
 	def _cleanObj(self, objToKeep, objToDel):
 		objToKeep.addAlias(objToDel.name, '    ')
 		for alias in objToDel.alias:
 			objToKeep.addAlias(alias, '    ')
+		for ciscoLine in objToDel.ciscoLines:
+			objToKeep.addCiscoLine(ciscoLine, '    ')			
 		if C2C_DEBUG: print(WARN_PREFIX+'    Deleting object: %s (%s)' % (objToDel.name, objToDel.getClass()))
 		self.removeObj(objToDel)
 		
@@ -1554,13 +1638,13 @@ class Cisco2Checkpoint(CiscoObject):
 		
 	def findObjByNameType(self,name,types):
 		return [obj for obj in self.obj_list if (obj.getClass() in types \
-					and (obj.name == name or name in obj.alias))]
+					and (obj.name.lower() == name.lower() or name in obj.alias))]
 		
 	# This function does not return ports or port groups
 	def findObjByName(self,name):
 		return [obj for obj in self.obj_list \
 					if (obj.getClass() in NETOBJ_NAMED_CLASSES \
-						and (obj.name == name or name in obj.alias))]
+						and (obj.name.lower() == name.lower() or name in obj.alias))]
 	
 	def findHostByAddr(self,ipAddr):
 		return [obj for obj in self.obj_list \
@@ -1590,22 +1674,22 @@ class Cisco2Checkpoint(CiscoObject):
 	def findServiceByName(self, name):
 		return [obj for obj in self.obj_list \
 					if (obj.getClass() in SVCOBJ_NAMED_CLASSES \
-						and obj.name == name or name in obj.alias)]
+						and obj.name.lower() == name.lower() or name in obj.alias)]
 	
 	def findIPServiceByName(self, name):
 		return [obj for obj in self.obj_list \
 					if (obj.getClass() in ['CiscoSinglePort','CiscoPortRange','CiscoPortGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp'] \
-						and obj.name == name or name in obj.alias)]
+						and obj.name.lower() == name.lower() or name in obj.alias)]
 						
 	def findServiceGroupByName(self,name):
 		return [obj for obj in self.obj_list \
 					if (obj.getClass() == 'CiscoPortGroup') \
-						and (obj.name == name or name in obj.alias)]
+						and (obj.name.lower() == name.lower() or name in obj.alias)]
 				
 	def findIcmpByName(self, name):
 		return [obj for obj in self.obj_list \
 					if (obj.getClass() == 'CiscoIcmp' or obj.getClass() == 'CiscoAnyIcmp') \
-						and (obj.name == name or name in obj.alias)]
+						and (obj.name.lower() == name.lower() or name in obj.alias)]
 						
 	def findRuleByDesc(self, desc):
 		return [obj for obj in self.obj_list \
@@ -1636,8 +1720,8 @@ class Cisco2Checkpoint(CiscoObject):
 		global FW_RULE_INDEX
 		FW_RULE_INDEX = index
 		
-	def getAllObjs(self):
-		return ''.join([obj.toString() for obj in self.obj_list if obj.alreadyExist == False])
+	def getAllObjs(self, verify=False):
+		return ''.join([obj.toString('', verify) for obj in self.obj_list if obj.alreadyExist == False])
 		
 	def getAllHosts(self):
 		return ''.join([obj.toString() for obj in self.obj_list if (obj.getClass() == 'CiscoHost' or obj.getClass() == 'CiscoName')])
@@ -1714,6 +1798,7 @@ class Cisco2Checkpoint(CiscoObject):
 				[obj.toDBEdit() for obj in self.obj_list if (obj.getClass() == 'CiscoNatRule') and obj.type in ['static','hide']] + \
 				[obj.toDBEdit() for obj in self.obj_list if (obj.getClass() == 'CiscoFwRule')]) + \
 				"update_all"
+				
 
 class Cisco2CheckpointManager(Cisco2Checkpoint):
 		
@@ -1738,49 +1823,79 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
 				newC2c.setDebug(self.debug)
 				newC2c.setPolicy(self.policy)
 				newC2c.setInstallOn(self.installOn)
-				newC2c.importConfig(cpPortsFile,filePath)
+				newC2c.importConfig(cpPortsFile,filePath,False)
 				self.c2c_list.append(newC2c)
 			else:
 				#print(WARN_PREFIX+'Invalid file: %s' % filePath)
 				pass
-				
+			
+		self._renameDuplicateGroups()
 		self._importAllButFwRules()
+		self._fixDuplicatePorts()
 		self._updateReferer()
 		#self._fixDuplicateNames()
 		self._fixDuplicateIp()
 		self._fixDuplicateSubnet()
 		self._fixDuplicateRange()
+		
 		self._fixDuplicateAny()
-		self._renameDuplicateGroups()
 		self._importAllFwRules()
 		self._fixFwRuleRedundancy()
 		self._updateCounters()
 	
+	def _renameDuplicateGroups(self):
+		print(MSG_PREFIX+'['+self.getClass()+'] Renaming duplicate network groups')
+		for c2c in self.c2c_list:
+			for grpObj in [obj for obj in c2c.obj_list if obj.getClass() in GROUP_CLASSES]:
+				# if group is in other c2c instances
+				dupGrpList = [obj for obj in make_flat([tmpc2c.obj_list for tmpc2c in self.c2c_list if tmpc2c != c2c]) if obj.getClass() in GROUP_CLASSES and grpObj.name == obj.name]
+				if len(dupGrpList) > 0:
+					self._renameObjects(dupGrpList)
+		
+	def _renameObjects(self, foundList):
+		if len(foundList) == 1:
+			pass
+			#if C2C_DEBUG: print(MSG_PREFIX+'  %s: OK' % objName)
+		else:
+			if C2C_DEBUG: print(WARN_PREFIX+'  Object %s (%s) was found %i times in different config files. Renaming duplicates.' % (objName,objType,len(foundList)))
+			if C2C_DEBUG: print(WARN_PREFIX+'    Keeping: %s (%s)' % (foundList[0].name,foundList[0].getClass()))
+			num = 1
+			for objToRename in foundList[1:]:
+				objToRename.name = objToRename.name+('-%02d' % num)
+				num += 1
+				
 	def _importAllButFwRules(self):
-		print(MSG_PREFIX+'Importing all objects except fw rules')
+		print(MSG_PREFIX+'['+self.getClass()+'] Importing objects except fw rules')
 		for c2c in self.c2c_list:
 			self.obj_list += [obj for obj in c2c.obj_list if (obj.getClass() != 'CiscoFwRule')]
 			
 	def _importAllFwRules(self):
-		print(MSG_PREFIX+'Importing all fw rules')
+		print(MSG_PREFIX+'['+self.getClass()+'] Importing fw rules')
 		for c2c in self.c2c_list:
 			self._importFWRules(c2c.parser.getFwRules())
 
 	def _updateReferer(self):
-		print(MSG_PREFIX+'Updating referer variable "c2c"')
+		print(MSG_PREFIX+'['+self.getClass()+'] Updating referer variable "c2c"')
 		for obj in self.obj_list:
 			obj.c2c = self
 			
 	def _fixDuplicateAny(self):
-		print(MSG_PREFIX+'Fixing duplicate any objects')
+		print(MSG_PREFIX+'['+self.getClass()+'] Fixing duplicate any objects')
 		for obj in self.obj_list:
 			if obj.getClass() in ANY_CLASSES:
 				foundList = self.findObjByType(obj.getClass())
 				self._fixDuplicate(foundList, obj.name, obj.getClass())
-		
+			
+	def _fixDuplicatePorts(self):
+		print(MSG_PREFIX+'['+self.getClass()+'] Fixing duplicate ports')
+		for obj in self.obj_list:
+			if obj.getClass() in ['CiscoSinglePort']:
+				foundList = self.findServiceByNum(obj.proto, obj.port)
+				self._fixDuplicate(foundList, obj.name, obj.getClass())
+				
 	# TODO: Should check obj_list instead of c2c_list
 	def _updateCounters(self):
-		print(MSG_PREFIX+'Updating counters')
+		print(MSG_PREFIX+'['+self.getClass()+'] Updating counters')
 		self.nameInCt = sum([obj.nameInCt for obj in self.c2c_list])
 		self.nameCt = sum([obj.nameCt for obj in self.c2c_list])
 		self.hostInCt = sum([obj.hostInCt for obj in self.c2c_list])
@@ -1797,14 +1912,7 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
 		self.natRuCt = sum([obj.natRuCt for obj in self.c2c_list])
 		self.fwRuInCt = sum([obj.fwRuInCt for obj in self.c2c_list])
 		self.fwRuCt = sum([obj.fwRuCt for obj in self.c2c_list])
-	
-	def _renameDuplicateGroups(self):
-		print(MSG_PREFIX+'Renaming duplicate network groups')
-		#for obj in self.obj_list:
-		#	if obj.getClass() in ['CiscoNetGroup']:
-		#		foundList = self.findDuplicateNetGroup(obj)
-		#		self._fixDuplicate(foundList, obj.name, obj.getClass())
-		#self.netGrCt = len(self.findObjByType(['CiscoNetGroup']))	
+
 
 		
 		
