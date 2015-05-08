@@ -1,6 +1,7 @@
 C2C_VERSION = '0.09 - 2015-04-20'
 C2C_DEBUG = False
 
+MAX_FWRU_NAME_LEN = 30	# Product limitation
 DEFAULT_FORMAT = 'dbedit'
 DEFAULT_CP_PORT_FILE = 'cpports\\checkpoint_ports.xml'
 DEFAULT_OUTPUT_FILE = 'network_script.txt'
