@@ -1,4 +1,4 @@
-C2C_VERSION = '0.09 - 2015-04-20'
+C2C_VERSION = '0.14 - 2015-05-08'
 C2C_DEBUG = False
 
 MAX_FWRU_NAME_LEN = 30	# Product limitation
@@ -6,13 +6,14 @@ DEFAULT_FORMAT = 'dbedit'
 DEFAULT_CP_PORT_FILE = 'cpports\\checkpoint_ports.xml'
 DEFAULT_OUTPUT_FILE = 'network_script.txt'
 DEFAULT_POLICY = 'Standard'
-DEFAULT_INSTALLON = 'atcl'
+DEFAULT_INSTALLON = 'vs01'
 
 WARN_PREFIX = '#[-] '
 MSG_PREFIX = '#[+] '
 NEW_NET_PREFIX = 'N_'
 NEW_HOST_PREFIX = 'H_'
 NEW_RANGE_PREFIX = 'R_'
+NEW_GROUP_PREFIX = 'G_'
 TCPUDP_PREFIX = 'TU_'
 TCP_PREFIX = 'TCP_'
 UDP_PREFIX = 'UDP_'
@@ -26,7 +27,7 @@ SUPPORTED_OBJ_FLAGS = ['object-group', 'object', 'host', 'any4', 'any']
 SUPPORTED_PORT_FLAGS = ['eq', 'range', 'object-group']
 SUPPORTED_FLAGS = ['object-group', 'object', 'eq', 'log', 'host', 'any4', 'any']
 SUPPORTED_ANY_FLAGS = ['any', 'any4']
-FW_RULE_INDEX = 0
+FW_RULE_INDEX = -1
 
 HOST_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost']
 NETOBJ_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange']

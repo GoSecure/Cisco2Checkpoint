@@ -7,6 +7,13 @@ Known limitations
  - The script does not support "VPN" field yet.
  - The script create only static NAT and hide NAT rules (not dynamic ones)
 
+v0.14 - 2015-05-08
+Features:
+ - Made several tests
+ - Fixed a bug where NAT rules were not imported properly in "directory mode" (--configDir)
+ - Fixed a bug where groups were not renamed when starting with a number.
+ - Fixed a bug where disabled rules were merged with enabled one
+ 
 v0.13 - 2015-05-07
 Features:
  - Fixed a bug where groups were not renamed properly 

@@ -79,6 +79,8 @@ class CiscoObject():
 				return NEW_NET_PREFIX+name
 			elif self.getClass() == 'CiscoName' or self.getClass() == 'CiscoHost':
 				return NEW_HOST_PREFIX+name
+			elif self.getClass() == 'CiscoPortGroup' or self.getClass() == 'CiscoNetGroup':
+				return NEW_GROUP_PREFIX+name
 			else:
 				return name
 		else:
@@ -1189,7 +1191,8 @@ class CiscoFwRule(CiscoGroup):
 			raise C2CException('Action "%s" not supported' % self.action)
 			
 	def _getDisabled(self, acl):
-		if acl[-1:] == 'inactive':
+		#if acl[-1:] == 'inactive':
+		if 'inactive' in acl:
 			return True
 		else:
 			return False
@@ -1242,7 +1245,10 @@ class CiscoFwRule(CiscoGroup):
 			return ''
 			
 	def _getInstallOnToDBEdit(self):
-		return 'globals:Any'
+		if self.installOn != None and self.installOn != '':
+			return 'network_objects:'+self.installOn
+		else:
+			return 'globals:Any'
 		
 	def _getActionToDBEdit(self):
 		if self.action == 'permit':
@@ -1290,7 +1296,7 @@ class CiscoFwRule(CiscoGroup):
 		portName = self.port.name if not isarray(self.port) else self._getPortToString()
 		if inclChild and self.header_text != None:
 			ret += indent+"Label(text="+self.header_text+")\n"
-		ret += indent+"FWRule(src=%s,dst=%s,port=%s,action=%s,pol=%s,inst=%s,desc=%s)" % (srcName,dstName,portName,self.action,self.policy,self.installOn,self.getDesc())
+		ret += indent+"FWRule(src=%s,dst=%s,port=%s,action=%s,pol=%s,inst=%s,disabled=%s,desc=%s)" % (srcName,dstName,portName,self.action,self.policy,self.installOn,str(self.disabled),self.getDesc())
 		if inclChild:
 			ret += "\n"
 			for src in self.src:
@@ -1630,23 +1636,23 @@ class Cisco2Checkpoint(CiscoObject):
 		
 	def _areMergable(self, obj1, obj2):
 		# Conditions for merges
-		# 1- Same(src, dst, action, tracks, installOn, time, policy, aclName), Different(port)
-		# 2- Same(src, port, action, tracks, installOn, time, policy, aclName), Different(dst)
-		# 3- Same(dst, port, action, tracks, installOn, time, policy, aclName), Different(src)
+		# 1- Same(src, dst, action, tracks, installOn, time, policy, aclName, disabled), Different(port)
+		# 2- Same(src, port, action, tracks, installOn, time, policy, aclName, disabled), Different(dst)
+		# 3- Same(dst, port, action, tracks, installOn, time, policy, aclName, disabled), Different(src)
 		if (obj1.src == obj2.src and obj1.dst == obj2.dst and obj1.action == obj2.action \
 			and obj1.tracks == obj2.tracks and obj1.installOn == obj2.installOn \
 			 and obj1.time == obj2.time and obj1.policy == obj2.policy \
-			 and obj1.aclName == obj2.aclName) \
+			 and obj1.aclName == obj2.aclName and obj1.disabled == obj2.disabled) \
 			 or \
 		   (obj1.src == obj2.src and obj1.port == obj2.port and obj1.action == obj2.action \
 			 and obj1.tracks == obj2.tracks and obj1.installOn == obj2.installOn \
 			 and obj1.time == obj2.time and obj1.policy == obj2.policy \
-			 and obj1.aclName == obj2.aclName) \
+			 and obj1.aclName == obj2.aclName and obj1.disabled == obj2.disabled) \
 			 or \
 		   (obj1.dst == obj2.dst and obj1.port == obj2.port and obj1.action == obj2.action \
 			 and obj1.tracks == obj2.tracks and obj1.installOn == obj2.installOn \
 			 and obj1.time == obj2.time and obj1.policy == obj2.policy \
-			 and obj1.aclName == obj2.aclName):
+			 and obj1.aclName == obj2.aclName and obj1.disabled == obj2.disabled):
 			return True
 		else:
 			return False
@@ -1874,6 +1880,7 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
 		self._fixDuplicateRange()
 		self._fixDuplicateAny()
 		self._importAllNetGroups()
+		self._importAllNatRules()
 		self._importAllFwRules()
 		self.fwRuInCt = len(self.findObjByType(['CiscoFwRule']))
 		self._fixFwRuleRedundancy()
@@ -1911,12 +1918,17 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
 	def _importAllSimpleObjects(self):
 		print(MSG_PREFIX+'['+self.getClass()+'] Importing objects except net groups and fw rules')
 		for c2c in self.c2c_list:
-			self.obj_list += [obj for obj in c2c.obj_list if (obj.getClass() != 'CiscoFwRule' and obj.getClass() != 'CiscoNetGroup')]
+			self.obj_list += [obj for obj in c2c.obj_list if (obj.getClass() != 'CiscoFwRule' and obj.getClass() != 'CiscoNetGroup' and obj.getClass() != 'CiscoNatRule')]
 			
 	def _importAllNetGroups(self):
 		print(MSG_PREFIX+'['+self.getClass()+'] Importing groups')
 		for c2c in self.c2c_list:
 			self._importNetGroups(c2c.parser.getNetGroups())
+			
+	def _importAllNatRules(self):
+		print(MSG_PREFIX+'['+self.getClass()+'] Importing NAT rules')
+		for c2c in self.c2c_list:
+			self._importNatRules(c2c.parser.getNatRules())
 			
 	def _importAllFwRules(self):
 		print(MSG_PREFIX+'['+self.getClass()+'] Importing fw rules')

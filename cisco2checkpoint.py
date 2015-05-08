@@ -99,8 +99,8 @@ optGrp.add_argument('--ciscoDir', '-d', action='store', dest='ciscoDir', default
               type=str, metavar='DIR', help='config directory to parse. Will read only *.Config files')
 optGrp.add_argument('--policy', '-p', action='store', dest='policy', default=DEFAULT_POLICY, \
               type=str, help='The policy name. Relevant with --export only. Default: %s' % DEFAULT_POLICY)
-optGrp.add_argument('--installOn', '-i', action='append', dest='installOn', default=DEFAULT_INSTALLON, \
-              type=str, metavar='FWs', help='List of firewall object to install rules for. Can use option several times.')
+optGrp.add_argument('--installOn', '-i', action='store', dest='installOn', default=DEFAULT_INSTALLON, \
+              type=str, metavar='FWs', help='List of firewall object to install rules for. Also used for NAT rules.')
 optGrp.add_argument('--format', '-f', action='store', dest='format', default=DEFAULT_FORMAT, \
               type=str, help='Specify the format. Valid values: dbedit, text. Default: %s' % DEFAULT_FORMAT)
 optGrp.add_argument('--cpPortsFile', action='store', dest='cpPortsFile', default=DEFAULT_CP_PORT_FILE, \
