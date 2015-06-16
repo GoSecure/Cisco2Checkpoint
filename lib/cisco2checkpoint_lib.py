@@ -5,6 +5,7 @@ import xml.etree.ElementTree as et
 import copy
 import socket
 import os
+import re
 
 def isarray(var):
 	return isinstance(var, (list, tuple))
@@ -77,10 +78,18 @@ class CiscoObject():
 		if name != '' and name[0].isdigit():
 			if self.getClass() == 'CiscoNet':
 				return NEW_NET_PREFIX+name
+			elif self.getClass() == 'CiscoRange':
+				return NEW_RANGE_PREFIX+name
 			elif self.getClass() == 'CiscoName' or self.getClass() == 'CiscoHost':
 				return NEW_HOST_PREFIX+name
 			elif self.getClass() == 'CiscoPortGroup' or self.getClass() == 'CiscoNetGroup':
 				return NEW_GROUP_PREFIX+name
+			elif self.getClass() in ['CiscoSinglePort','CiscoPortRange'] and self.proto == 'tcp':
+				return TCP_PREFIX+name
+			elif self.getClass() in ['CiscoSinglePort','CiscoPortRange'] and self.proto == 'udp':
+				return UDP_PREFIX+name
+			elif self.getClass() in ['CiscoSinglePort','CiscoPortRange'] and self.proto == 'tcp-udp':
+				return TCPUDP_PREFIX+name
 			else:
 				return name
 		else:
@@ -144,8 +153,17 @@ class CiscoPort(CiscoObject):
 		elif self.proto == 'any':
 			return ''
 		else:
+			print(self.name)
+			print(self.port)
+			print(self.getClass())
 			raise C2CException('Protocol not supported: %s' % self.proto)
 			
+	def _convertPort(self, text):
+		for i, j in PORT_DIC.iteritems():
+			#text = text.replace(i, j)
+			text = re.sub(r'^'+i+'$', j, text)
+		return text.rstrip()
+		
 	def toDBEditElement(self, groupName):
 		return "addelement services {0} '' services:{1}\n".format(groupName, self.name)
 
@@ -158,14 +176,15 @@ class CiscoGroup(CiscoObject):
 		
 	def _convertPort(self, text):
 		for i, j in PORT_DIC.iteritems():
-			text = text.replace(i, j)
+			#text = text.replace(i, j)
+			text = re.sub(r'^'+i+'$', j, text)
 		return text.rstrip()
 		
 	def _getMemberObj(self, type, v1, v2=None, v3=None):
 		if type == 'host' and v1 == 'any':
 			name = v1
 			obj_list = self.c2c.findObjByName(name)
-		elif type in ['port','tcp','udp'] and v1 == 'any':
+		elif type in ['port','ip','tcp','udp'] and v1 == 'any':
 			name = v1
 			#obj_list = self.c2c.findIPServiceByName(name)
 			obj_list = self.c2c.findObjByNameType(name,'CiscoAnyPort')
@@ -200,6 +219,9 @@ class CiscoGroup(CiscoObject):
 			name = v1
 			obj_list = self.c2c.findObjByName(name)
 		elif type == 'port-group':
+			name = v1
+			obj_list = self.c2c.findServiceByName(name)
+		elif type == 'port-object':
 			name = v1
 			obj_list = self.c2c.findServiceByName(name)
 		elif type == 'eq':		# port-object eq X
@@ -336,11 +358,13 @@ class CiscoGroup(CiscoObject):
 			newObj = CiscoHost(self, None, name, name, None, True)
 			self.c2c.addObj(newObj)
 			#raise C2CException('Cannot create a nat external IP "%s" on the fly.' % name)
-		else:
+		elif isipaddress(type):
 			subnet,mask = type,v1		# Yes this is ugly.
 			newObj = CiscoNet(self, None, NEW_NET_PREFIX+subnet, subnet, mask)
 			self.c2c.addObj(newObj)
 			self.members.append(newObj)
+		else:
+			raise C2CException('Invalid type: %s' % type)
 		
 	def isEqual(self, other):
 		return self.__dict__ == other.__dict__
@@ -428,6 +452,11 @@ class CiscoNet(CiscoObject):
 	mask = None
 	
 	def __init__(self, c2c, parsedObj, name=None, ipAddr=None, mask=None, desc=None):
+		if ipAddr != None and not isipaddress(ipAddr):
+			print(parsedObj)
+			print(name)
+			print(mask)
+			raise C2CException('error')
 		if name != None:
 			CiscoObject.__init__(self, c2c, None, name, desc)
 			self.ipAddr = ipAddr
@@ -499,9 +528,12 @@ class CiscoRange(CiscoObject):
 class CiscoSinglePort(CiscoPort):
 	"""A cisco name"""
 	port = None
+	sport = None # Source port. TODO: Not defined yet but would be useful. 
 	
 	def __init__(self, c2c, parsedObj, name=None, proto=None, port=None, desc=None, alreadyExist=False):
-		if name != None:
+		if parsedObj != None:
+			pass
+		elif name != None:
 			CiscoPort.__init__(self, c2c, name, alreadyExist)	
 		else:
 			if proto == 'tcp':
@@ -519,8 +551,23 @@ class CiscoSinglePort(CiscoPort):
 			self.desc = desc
 		elif parsedObj != None:
 			a = parsedObj.text.split(' ', 2)
-			self.port = a[2]
-
+			name = a[2]
+			
+			child = self._parseChildren(parsedObj)
+			if child.has_key('service'):
+				for portObj in child['service']:
+					# Possible values of service:
+					# service udp destination eq 123
+					# service udp destination eq whois
+					portObj = portObj.rstrip()
+					
+					self.proto,direction,portCmp,port = portObj.split(' ',3)
+					self.port = self._convertPort(port)
+					
+					# This is called late because proto must be defined first.
+					CiscoPort.__init__(self, c2c, name, alreadyExist)
+					
+					
 	def toString(self, indent='', verify=False):
 		ret = ''
 		ret += indent+self.getClass()+"(name=%s,port=%s,desc=%s,alias=%s)\n" % (self.name,self.port,self.getDesc(),';'.join(self.alias))
@@ -554,7 +601,9 @@ class CiscoPortRange(CiscoPort):
 	last = None
 	
 	def __init__(self, c2c, parsedObj, name=None, proto=None, first=None, last=None, desc=None, alreadyExist=False):
-		if name == None:
+		if parsedObj != None:
+			pass
+		elif name == None:
 			if proto == 'tcp':
 				CiscoPort.__init__(self, c2c, TCP_PREFIX+first+'-'+last, alreadyExist)
 			elif proto == 'udp':
@@ -570,9 +619,19 @@ class CiscoPortRange(CiscoPort):
 			self.last = last
 			self.desc = desc
 		else:
-			a = parsedObj.text.split(' ', 3)
-			self.first = a[2]
-			self.last = a[3]
+			a = parsedObj.text.split(' ', 2)
+			name = a[2]
+			
+			child = self._parseChildren(parsedObj)
+			if child.has_key('service'):
+				for portObj in child['service']:
+					# Possible values of service:
+					# service udp destination range 123 456
+					portObj = portObj.rstrip()
+					self.proto,direction,portCmp,self.first,self.last = portObj.split(' ',4)
+					
+					# This is called late because proto must be defined first.
+					CiscoPort.__init__(self, c2c, name, alreadyExist)
 		
 	def toString(self, indent='', verify=False):
 		ret = ''
@@ -710,7 +769,7 @@ class CiscoPortGroup(CiscoGroup):
 		name = a[2]
 		CiscoGroup.__init__(self, c2c, parsedObj.text, name)
 		self.dbClass = 'service_group'
-		
+				
 		if grpType == 'protocol':
 			child = self._parseChildren(parsedObj)
 			if child.has_key('protocol-object'):
@@ -761,36 +820,54 @@ class CiscoPortGroup(CiscoGroup):
 						else:
 							raise C2CException('This identifier is not supported: %s' % portCmp)
 							
-					
-
 			if child.has_key('service-object'):
 				for portObj in child['service-object']:
 					# Possible values of service-object:
 					# service-object tcp destination range 19305 19309 
 					# service-object udp destination eq 123
 					# service-object udp destination eq whois
-					# service-object icmp 
+					# service-object icmp|ip|tcp|udp
+					# service-object object TCP_4443
 					portObj = portObj.rstrip()
 					if portObj == 'icmp': 		# This means all icmp. 
 						portCmp = 'icmp'
 						obj = self._getMemberObj(portCmp,'any')
+					elif portObj == 'ip':
+						portCmp = 'ip'
+						obj = self._getMemberObj('port','any')
+					elif portObj == 'tcp':
+						portCmp = 'tcp'
+						obj = self._getMemberObj('port','any')
+					elif portObj == 'udp': 
+						portCmp = 'udp'
+						obj = self._getMemberObj('port','any')
 					elif portObj == 'esp': 		# This means all esp (IPSec phase1). 
 						portCmp = 'esp'
 						obj = self._getMemberObj(portCmp,'any')
 					elif portObj == 'ah': 		# This means all ah (IPSec phase2). 
 						portCmp = 'ah'
 						obj = self._getMemberObj(portCmp,'any')
+					elif portObj == 'object': 		# This means a previously defined port (Range or Single)
+						portCmp = 'port-object'
+						obj = self._getMemberObj(portCmp,None)
 					else:
-						proto,direction,portCmp,port = portObj.split(' ',3)
-						port = self._convertPort(port)
-						if ' ' in port and port[-1:] != ' ':		# After conversion, the port could be a range (ex: sip)
-							portCmp = 'range'
+						#print(portObj)
+						try:
+							proto,direction,portCmp,port = portObj.split(' ',3)
+							port = self._convertPort(port)
+							if ' ' in port and port[-1:] != ' ':		# After conversion, the port could be a range (ex: sip)
+								portCmp = 'range'
+						except ValueError:
+							object,name = portObj.split(' ',1)
+							portCmp = 'port-object'
 							
 						if portCmp == 'eq':
 							obj = self._getMemberObj(portCmp,proto,port)
 						elif portCmp == 'range':
 							first,last = port.split(' ',1)
 							obj = self._getMemberObj(portCmp,proto,first,last)
+						elif portCmp == 'port-object':
+							obj = self._getMemberObj(portCmp,name)
 						else:
 							raise C2CException('This identifier is not supported: %s' % portCmp)
 							
@@ -803,6 +880,12 @@ class CiscoPortGroup(CiscoGroup):
 							self._createMemberObj(portCmp,proto,first,last)
 						elif portCmp == 'icmp':
 							self._createMemberObj(portCmp,'any')
+						elif portCmp == 'ip':
+							self._createMemberObj('port','any')
+						elif portCmp == 'tcp':
+							self._createMemberObj('port','any')
+						elif portCmp == 'udp':
+							self._createMemberObj('port','any')							
 						elif portCmp == 'esp':
 							self._createMemberObj(portCmp,'any')
 						elif portCmp == 'ah':
@@ -810,8 +893,6 @@ class CiscoPortGroup(CiscoGroup):
 						else:
 							raise C2CException('This identifier is not supported: %s' % portCmp)
 							
-					
-					
 			if child.has_key('group-object'):
 				for portObj in child['group-object']:
 					# Possible values of group-object:
@@ -821,8 +902,6 @@ class CiscoPortGroup(CiscoGroup):
 						self.addMember(obj)
 					else:
 						self._createMemberObj('port-group',portObj)
-						
-					
 			
 			if child.has_key('icmp-object'):
 				proto = 'icmp'
@@ -837,7 +916,6 @@ class CiscoPortGroup(CiscoGroup):
 					else:
 						self._createMemberObj(proto,icmpObj)					
 					
-						
 		if child.has_key('description'):
 			self.desc = child['description'][0]
 		
@@ -908,16 +986,20 @@ class CiscoNatRule(CiscoGroup):
 				# nat (inside,SCNET) dynamic obj-205.192.153.10-205.192.153.254
 				# nat (dmz-1,outside) static 69.17.147.172
 				# nat (DMZ,outside) dynamic interface
-
+				# Does not support:
+				# nat (dmz-1,outside) static 1.2.3.4 service tcp 8089 8089
+				
 				zones,type,natIp = network.split(' ',2)
 				if type == 'dynamic' and natIp == 'interface':
 					type = 'hide'
-				else:
+				elif type == 'static' and isipaddress(natIp) and not ' ' in natIp:
 					obj = self._getMemberObj(type,natIp)
 					if obj == None:
 						self._createMemberObj(type,natIp)
 						obj = self._getMemberObj(type,natIp)
 					self.externalObj = obj
+				else:
+					raise C2CException('Unsupported NAT rule: %s' % network)
 					
 				self.type = type
 				
@@ -938,6 +1020,9 @@ class CiscoNatRule(CiscoGroup):
 			return '''# Creating new nat rule: {0}
  modify network_objects {0} add_adtr_rule true
  modify network_objects {0} NAT NAT
+ modify network_objects {0} NAT:valid_addr_name {0}
+ modify network_objects {0} NAT:valid_ipaddr 0.0.0.0
+ modify network_objects {0} NAT:valid_ipaddr6 ::
  modify network_objects {0} NAT:netobj_adtr_method adtr_hide
  modify network_objects {0} NAT:the_firewalling_obj network_objects:{1}
  update network_objects {0}
@@ -1160,9 +1245,10 @@ class CiscoFwRule(CiscoGroup):
 				if not obj:
 					self._createMemberObj('port-group',portName)
 					obj = self._getMemberObj('port-group',portName)
-			if not obj:
-				self._createMemberObj(type,first,last)
-				obj = self._getMemberObj(type,first,last)		
+					
+			#if not obj:
+			#	self._createMemberObj(type,first,last)
+			#	obj = self._getMemberObj(type,first,last)		
 		
 		else:
 			raise C2CException('Unknown flag when parsing port from ACL: "%s"' % type)
@@ -1359,7 +1445,8 @@ class CiscoParser():
 		return self.getNameObjs() + \
 				self.getHostObjs() + \
 				self.getNetObjs() + \
-				self.getRangeObjs()
+				self.getRangeObjs() + \
+				self.getPortObjs()
 				
 	def getAllGroups(self):
 		return	self.getNetGroups() + \
@@ -1370,16 +1457,24 @@ class CiscoParser():
 		
 	def getHostObjs(self):
 		return [obj for obj in self.parse.find_objects(r"^object\snetwork") \
-					if obj.re_search_children(r"host")]
+					if obj.re_search_children(r"^\shost")]
 
 	def getNetObjs(self):
 		return [obj for obj in self.parse.find_objects(r"^object\snetwork") \
-					if obj.re_search_children(r"subnet")]
+					if obj.re_search_children(r"^\ssubnet")]
 
 	def getRangeObjs(self):
 		return [obj for obj in self.parse.find_objects(r"^object\snetwork") \
-					if obj.re_search_children(r"range")]
-		
+					if obj.re_search_children(r"^\srange")]
+
+	def getSinglePortObjs(self):
+		return [obj for obj in self.parse.find_objects(r"^object\sservice") \
+					if obj.re_search_children(r"^\sservice\s\w+\s\w+\seq")]
+
+	def getPortRangeObjs(self):
+		return [obj for obj in self.parse.find_objects(r"^object\sservice") \
+					if obj.re_search_children(r"^\sservice\s\w+\s\w+\srange")]
+					
 	def getNetGroups(self):
 		return [obj for obj in self.parse.find_objects(r"^object-group\snetwork")]
 					
@@ -1392,7 +1487,7 @@ class CiscoParser():
 				
 	def getNatRules(self):
 		return [obj for obj in self.parse.find_objects(r"^object\snetwork") \
-					if obj.re_search_children(r"nat")]	
+					if obj.re_search_children(r"^\snat")]	
 					
 	def getFwRules(self):
 		return [obj for obj in self.parse.find_objects(r"^access-list")]	
@@ -1405,6 +1500,8 @@ class Cisco2Checkpoint(CiscoObject):
 	parser = None
 	policy = None
 	installOn = None
+	natInstallOn = None
+	disableRules = None
 	
 	nameInCt = 0
 	nameCt = 0
@@ -1416,6 +1513,8 @@ class Cisco2Checkpoint(CiscoObject):
 	rangeCt = 0
 	cpPortsInCt = 0
 	cpPortsCt = 0
+	singlePortCt = 0
+	portRangeCt = 0
 	netGrInCt = 0
 	netGrCt = 0
 	portGrCt = 0
@@ -1438,12 +1537,14 @@ class Cisco2Checkpoint(CiscoObject):
 		self._importHosts(self.parser.getHostObjs())
 		self._importNets(self.parser.getNetObjs())
 		self._importRanges(self.parser.getRangeObjs())
-		#self._importNames(self.parser.getNameObjs())		# Names are Legacy. Do not import as objects.
+		self._importNames(self.parser.getNameObjs())		# Names are Legacy. Do not import as objects.
 		self._fixDuplicateNames()
 		self._fixDuplicateIp()
 		self._fixDuplicateSubnet()
 		self._fixDuplicateRange()
 		self._importCheckpointPorts(xmlPortsFile)
+		self._importSinglePorts(self.parser.getSinglePortObjs())
+		self._importPortRanges(self.parser.getPortRangeObjs())
 		self._importNetGroups(self.parser.getNetGroups())	
 		self._importPortGroups(self.parser.getPortGroups())
 		self._importProtoGroups(self.parser.getProtoGroups())
@@ -1451,6 +1552,8 @@ class Cisco2Checkpoint(CiscoObject):
 		if loadFwRules:
 			self._importFWRules(self.parser.getFwRules())
 			self._fixFwRuleRedundancy()
+			if self.disableRules:
+				self._disableRules()
 		
 		self.netGrCt = len(self.findObjByType(['CiscoNetGroup']))	# Remove this 
 
@@ -1482,6 +1585,20 @@ class Cisco2Checkpoint(CiscoObject):
 			self.addObj(CiscoRange(self, r))
 			self.rangeInCt += 1
 			
+	def _importSinglePorts(self, ports):
+		print(MSG_PREFIX+'Importing all single ports objects.')
+		self.singlePortCt = 0
+		for p in ports:					
+			self.addObj(CiscoSinglePort(self, p))	
+			self.singlePortCt += 1
+			
+	def _importPortRanges(self, ports):
+		print(MSG_PREFIX+'Importing all port ranges objects.')
+		self.portRangeCt = 0
+		for p in ports:					
+			self.addObj(CiscoPortRange(self, p))	
+			self.portRangeCt += 1
+			
 	def _importNetGroups(self, groups):
 		print(MSG_PREFIX+'Importing all net/host/range groups.')
 		self.netGrInCt = 0
@@ -1511,7 +1628,7 @@ class Cisco2Checkpoint(CiscoObject):
 		print(MSG_PREFIX+'Importing all NAT rules.')
 		self.natRuCt = 0
 		for r in rules:		
-			self.addObj(CiscoNatRule(self, r, self.installOn))	
+			self.addObj(CiscoNatRule(self, r, self.natInstallOn))	
 			self.natRuCt += 1
 			
 	def _importFWRules(self, rules):
@@ -1535,6 +1652,11 @@ class Cisco2Checkpoint(CiscoObject):
 				comment = None
 			else:
 				raise C2CException('Invalid ACL type. It should be extended or remark only. Value was: "%s"' % type)
+	
+	def _disableRules(self):
+		for fwRule in [obj for obj in self.obj_list \
+				if (obj.getClass() == 'CiscoFwRule')]:
+			fwRule.disabled = True
 
 	def _getHeader(self, aclName):
 		return 'Imported from "%s", ACL Name: %s' % (self.importSrc, aclName)
@@ -1750,6 +1872,12 @@ class Cisco2Checkpoint(CiscoObject):
 		
 	def setInstallOn(self, installOn):
 		self.installOn = installOn
+
+	def setNatInstallOn(self, natInstallOn):
+		self.natInstallOn = natInstallOn
+		
+	def setDisableRules(self, disableRules):
+		self.disableRules = disableRules
 		
 	def setDebug(self, debug):
 		self.debug = debug
@@ -1809,6 +1937,8 @@ class Cisco2Checkpoint(CiscoObject):
 # Number of nat rules: {11}
 # Number of fw rules (before merge): {12}
 # Number of fw rules (after merge): {13}
+# Number of single ports: {14}
+# Number of port range: {15}
 #""".format(self.importSrc, \
 			self.nameInCt, \
 			self.nameCt, \
@@ -1822,7 +1952,9 @@ class Cisco2Checkpoint(CiscoObject):
 			self.portGrCt, \
 			self.natRuCt, \
 			self.fwRuInCt, \
-			self.fwRuCt \
+			self.fwRuCt, \
+			self.singlePortCt, \
+			self.portRangeCt \
 	)
 	
 	def toDBEdit(self):
@@ -1864,6 +1996,7 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
 				newC2c.setDebug(self.debug)
 				newC2c.setPolicy(self.policy)
 				newC2c.setInstallOn(self.installOn)
+				newC2c.setNatInstallOn(self.natInstallOn)
 				newC2c.importConfig(cpPortsFile,filePath,False)
 				self.c2c_list.append(newC2c)
 			else:

@@ -6,7 +6,20 @@ Known limitations
  - The script support only None and Log tracking
  - The script does not support "VPN" field yet.
  - The script create only static NAT and hide NAT rules (not dynamic ones)
+ - Does not support IPv6 (so any4 or any become any)
+ - Does not support "service-object object" as group members
 
+v0.15 - 2015-06-16
+Features:
+ - Several adjustement for genetec
+ - Uncommented "names" 
+ - Added rtsp port (554)
+ - Added some ICMP messages
+ - Added tftp and other cisco protocols
+ - Added the port object (can parse SinglePort and PortRange) from cisco config
+ - Added prefix to CiscoRange when created by script
+ - Fixed NAT issues when importing hide nat rules
+ 
 v0.14 - 2015-05-08
 Features:
  - Made several tests

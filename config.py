@@ -7,6 +7,7 @@ DEFAULT_CP_PORT_FILE = 'cpports\\checkpoint_ports.xml'
 DEFAULT_OUTPUT_FILE = 'network_script.txt'
 DEFAULT_POLICY = 'Standard'
 DEFAULT_INSTALLON = 'vs01'
+DEFAULT_NAT_INSTALLON = 'vs01'
 
 WARN_PREFIX = '#[-] '
 MSG_PREFIX = '#[+] '
@@ -46,15 +47,25 @@ EXCLUDE_PORTS = ['ssl_v3', 'ssh_version_2', 'ftp-bidir', 'ftp-pasv', 'ftp-port',
 
 # Translate cisco value => checkpoint value				
 ICMP_DIC = { 'unreachable' : 'dest-unreach', \
-			 'echo' : 'echo-request' }
+			 'echo' : 'echo-request', \
+			 'information-request' : 'info-req', \
+			 'information-reply' : 'info-reply', \
+			 'mask-reply' : 'mask-reply', \
+			 'mask-reply' : 'mask-reply', \
+			 'parameter-problem' : 'param-prblm', \
+			 'mobile-redirect' : 'redirect'}
 			 
 ILLEGAL_DIC = { '' : '', \
 				  'All-' : 'All_', \
 				  '-All' : '_All', \
 				  'In-Domain' : 'In_Domain', \
+				  '(' : '-', \
+				  ')' : '', \
 			  }	
 			  
-PORT_DIC = { 'ftp-data' : '20', \
+PORT_DIC = { 'echo' : '7', \
+		'daytime' : '13', \
+		'ftp-data' : '20', \
 		'ftp' : '21', \
 		'ssh' : '22', \
 		'telnet' : '23', \
@@ -66,7 +77,9 @@ PORT_DIC = { 'ftp-data' : '20', \
 		'domain-udp' : '53', \
 		'bootps' : '67', \
 		'bootpc' : '68', \
+		'tftp' : '69', \
 		'www' : '80', \
+		'pop2' : '109', \
 		'pop3' : '110', \
 		'sunrpc' : '111', \
 		'ntp' : '123', \
@@ -82,13 +95,15 @@ PORT_DIC = { 'ftp-data' : '20', \
 		'isakmp' : '500', \
 		'syslog' : '514', \
 		'lpd' : '515', \
+		'rtsp' : '554', \
+		'citrix-ica' : '1494', \
 		'sqlnet' : '1521', \
 		'h323' : '1720', \
 		'pptp' : '1723', \
 		'sip' : '5060 5061', \
 		'aol' : '5190', \
 		'pcanywhere-data' : '5631', \
-		'pcanywhere-status' : '5632', \
+		'pcanywhere-status' : '5632' \
 		}	
 		
 CONFIG_FILE_SUFFIX = '.Config'
