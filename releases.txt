@@ -9,9 +9,13 @@ Known limitations
  - Does not support IPv6 (so any4 or any become any)
  - Does not support "service-object object" as group members
 
+v0.16 - 2015-06-22
+Features:
+ - Developped a feature to "flatten" "DM_INLINE" groups in a firewall rule. When enabled, all these groups are removed and only the member is added to a firewall rule attribute (either src, dst or port). 
+ 
 v0.15 - 2015-06-16
 Features:
- - Several adjustement for genetec
+ - Several adjustement for another customer.
  - Uncommented "names" 
  - Added rtsp port (554)
  - Added some ICMP messages

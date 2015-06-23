@@ -100,7 +100,7 @@ optGrp.add_argument('--ciscoDir', '-d', action='store', dest='ciscoDir', default
 optGrp.add_argument('--policy', '-p', action='store', dest='policy', default=DEFAULT_POLICY, \
               type=str, help='The policy name. Relevant with --export only. Default: %s' % DEFAULT_POLICY)
 optGrp.add_argument('--installOn', '-i', action='store', dest='installOn', default=DEFAULT_INSTALLON, \
-              type=str, metavar='FWs', help='List of firewall object to install rules for. Also used for NAT rules.')
+              type=str, metavar='FWs', help='Specify the checkpoint object to install rules on. ')
 optGrp.add_argument('--natInstallOn', action='store', dest='natInstallOn', default=DEFAULT_NAT_INSTALLON, \
               type=str, metavar='FW', help='The firewall to use for all hide and static NAT rules.')
 optGrp.add_argument('--format', '-f', action='store', dest='format', default=DEFAULT_FORMAT, \
@@ -117,6 +117,10 @@ optGrp.add_argument('--stdout', action='store_true', dest='stdout', default=Fals
               help='Print output to stdout.')
 optGrp.add_argument('--disableRules', action='store_true', dest='disableRules', default=False, \
               help='Disable all firewall rules.')
+optGrp.add_argument('--flattenInlineNetGroups', action='store_true', dest='flattenInlineNetGroups', default=False, \
+              help='Flatten groups with prefix DM_INLINE_NETWORK_ so members are added to firewall rules instead of the group.')
+optGrp.add_argument('--flattenInlineSvcGroups', action='store_true', dest='flattenInlineSvcGroups', default=False, \
+              help='Flatten groups with prefix DM_INLINE_SERVICE_ so members are added to firewall rules instead of the group.')
 args = parser.parse_args()
 
 # Step 1: Instantiate c2c
@@ -136,6 +140,8 @@ if args.ciscoFile != '':
 	c2c.setNatInstallOn(args.natInstallOn)
 	c2c.setDisableRules(args.disableRules)
 	c2c.setFWRuleIndex(args.startIndex)
+	c2c.setFlattenInlineNetGroups(args.flattenInlineNetGroups)
+	c2c.setFlattenInlineSvcGroups(args.flattenInlineSvcGroups)
 	c2c.importConfig(args.cpPortsFile,args.ciscoFile)
 elif args.ciscoDir != '':
 	c2c = Cisco2CheckpointManager()
@@ -145,6 +151,8 @@ elif args.ciscoDir != '':
 	c2c.setNatInstallOn(args.natInstallOn)
 	c2c.setDisableRules(args.disableRules)
 	c2c.setFWRuleIndex(args.startIndex)
+	c2c.setFlattenInlineNetGroups(args.flattenInlineNetGroups)
+	c2c.setFlattenInlineSvcGroups(args.flattenInlineSvcGroups)
 	c2c.importConfig(args.cpPortsFile,args.ciscoDir)
 
 # Step 2: Process user request

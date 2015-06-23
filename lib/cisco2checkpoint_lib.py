@@ -1502,6 +1502,8 @@ class Cisco2Checkpoint(CiscoObject):
 	installOn = None
 	natInstallOn = None
 	disableRules = None
+	flattenInlineNetGroups = None
+	flattenInlineSvcGroups = None
 	
 	nameInCt = 0
 	nameCt = 0
@@ -1537,7 +1539,7 @@ class Cisco2Checkpoint(CiscoObject):
 		self._importHosts(self.parser.getHostObjs())
 		self._importNets(self.parser.getNetObjs())
 		self._importRanges(self.parser.getRangeObjs())
-		self._importNames(self.parser.getNameObjs())		# Names are Legacy. Do not import as objects.
+		#self._importNames(self.parser.getNameObjs())		# Names are Legacy. Do not import as objects.
 		self._fixDuplicateNames()
 		self._fixDuplicateIp()
 		self._fixDuplicateSubnet()
@@ -1556,7 +1558,13 @@ class Cisco2Checkpoint(CiscoObject):
 				self._disableRules()
 		
 		self.netGrCt = len(self.findObjByType(['CiscoNetGroup']))	# Remove this 
+		
+		if self.flattenInlineNetGroups:
+			self._flattenInlineNetGroups()
 
+		if self.flattenInlineSvcGroups:
+			self._flattenInlineSvcGroups()
+			
 	def _importNames(self, names):
 		print(MSG_PREFIX+'Importing all names.')
 		self.nameInCt = 0
@@ -1796,6 +1804,40 @@ class Cisco2Checkpoint(CiscoObject):
 		if C2C_DEBUG: print(WARN_PREFIX+'    Deleting object: %s (%s)' % (objToDel.name, objToDel.getClass()))
 		self.removeObj(objToDel)
 		
+	def _flattenInlineNetGroups(self):
+		print(MSG_PREFIX+'Flattening DM_INLINE_NETWORK groups')
+		fwRules = [obj for obj in self.obj_list \
+					if (obj.getClass() == 'CiscoFwRule')]		
+		for fwr in fwRules:	# For each firewall rules
+			for obj in fwr.src:	# For each source objects of the firewall rule.
+				if (obj.getClass() == 'CiscoNetGroup' \
+					and obj.name.startswith(DM_INLINE_NET_PREFIX)):
+					self._flattenFwRuleAttribute(fwr, fwr.src, obj)
+			for obj in fwr.dst:	# For each source objects of the firewall rule.
+				if (obj.getClass() == 'CiscoNetGroup' \
+					and obj.name.startswith(DM_INLINE_NET_PREFIX)):
+					self._flattenFwRuleAttribute(fwr, fwr.dst, obj)
+		
+	def _flattenInlineSvcGroups(self):
+		print(MSG_PREFIX+'Flattening DM_INLINE_SERVICE groups')
+		fwRules = [obj for obj in self.obj_list \
+					if (obj.getClass() == 'CiscoFwRule')]		
+		for fwr in fwRules:	# For each firewall rules
+			for obj in fwr.port:	# For each source objects of the firewall rule.
+				if (obj.getClass() == 'CiscoPortGroup' \
+					and (obj.name.startswith(DM_INLINE_SVC_PREFIX) or \
+						obj.name.startswith(DM_INLINE_TCP_PREFIX) or \
+						obj.name.startswith(DM_INLINE_UDP_PREFIX))):
+					self._flattenFwRuleAttribute(fwr, fwr.port, obj)
+		
+	def _flattenFwRuleAttribute(self,fwr,fwrattr,group):
+		if C2C_DEBUG: print(WARN_PREFIX+'    Flattening object %s on rule %s' % (group.name,fwr.name))
+		# Add group's member to firewall attribute
+		for m in group.members:
+			fwrattr.append(m)
+		# Remove group from firewall attribute
+		fwrattr.remove(group)
+
 	def findObjByType(self,types):
 		return [obj for obj in self.obj_list if (obj.getClass() in types)]
 		
@@ -1888,6 +1930,12 @@ class Cisco2Checkpoint(CiscoObject):
 	def setFWRuleIndex(self, index):
 		global FW_RULE_INDEX
 		FW_RULE_INDEX = index
+		
+	def setFlattenInlineNetGroups(self, flattenInlineNetGroups):
+		self.flattenInlineNetGroups = flattenInlineNetGroups
+		
+	def setFlattenInlineSvcGroups(self, flattenInlineSvcGroups):
+		self.flattenInlineSvcGroups = flattenInlineSvcGroups
 		
 	def getAllObjs(self, verify=False):
 		return ''.join([obj.toString('', verify) for obj in self.obj_list if obj.alreadyExist == False])
@@ -2017,6 +2065,13 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
 		self._importAllFwRules()
 		self.fwRuInCt = len(self.findObjByType(['CiscoFwRule']))
 		self._fixFwRuleRedundancy()
+		
+		if self.flattenInlineNetGroups:
+			self._flattenInlineNetGroups()
+
+		if self.flattenInlineSvcGroups:
+			self._flattenInlineSvcGroups()
+			
 		self._updateCounters()
 	
 	def _renameDuplicateGroups(self):
@@ -2107,12 +2162,3 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
 		#self.fwRuInCt = sum([obj.fwRuInCt for obj in self.c2c_list])
 		self.fwRuCt = len(self.findObjByType(['CiscoFwRule']))
 
-		
-		
-		
-		
-		
-		
-		
-		
-		
