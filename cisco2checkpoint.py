@@ -107,6 +107,8 @@ optGrp.add_argument('--format', '-f', action='store', dest='format', default=DEF
               type=str, help='Specify the format. Valid values: dbedit, text. Default: %s' % DEFAULT_FORMAT)
 optGrp.add_argument('--cpPortsFile', action='store', dest='cpPortsFile', default=DEFAULT_CP_PORT_FILE, \
               type=str, metavar='FILE', help='Checkpoint xml port file to parse. Default: %s' % DEFAULT_CP_PORT_FILE)
+optGrp.add_argument('--cpNetObjFile', action='store', dest='cpNetObjFile', default=DEFAULT_CP_NETOBJ_FILE, \
+              type=str, metavar='FILE', help='Checkpoint xml network objects file to parse. Default: %s' % DEFAULT_CP_NETOBJ_FILE)			  
 optGrp.add_argument('--output', '-o', action='store', dest='output', default=DEFAULT_OUTPUT_FILE, \
               type=str, metavar='FILE', help='Output file. Default: %s' % DEFAULT_OUTPUT_FILE)
 optGrp.add_argument('--startIndex', action='store', dest='startIndex', default=FW_RULE_INDEX, \
@@ -142,7 +144,7 @@ if args.ciscoFile != '':
 	c2c.setFWRuleIndex(args.startIndex)
 	c2c.setFlattenInlineNetGroups(args.flattenInlineNetGroups)
 	c2c.setFlattenInlineSvcGroups(args.flattenInlineSvcGroups)
-	c2c.importConfig(args.cpPortsFile,args.ciscoFile)
+	c2c.importConfig(args.cpPortsFile,args.cpNetObjFile,args.ciscoFile)
 elif args.ciscoDir != '':
 	c2c = Cisco2CheckpointManager()
 	c2c.setDebug(args.debug)
@@ -153,7 +155,7 @@ elif args.ciscoDir != '':
 	c2c.setFWRuleIndex(args.startIndex)
 	c2c.setFlattenInlineNetGroups(args.flattenInlineNetGroups)
 	c2c.setFlattenInlineSvcGroups(args.flattenInlineSvcGroups)
-	c2c.importConfig(args.cpPortsFile,args.ciscoDir)
+	c2c.importConfig(args.cpPortsFile,args.cpNetObjFile,args.ciscoDir)
 
 # Step 2: Process user request
 #try:

@@ -3,7 +3,8 @@ C2C_DEBUG = False
 
 MAX_FWRU_NAME_LEN = 30	# Product limitation
 DEFAULT_FORMAT = 'dbedit'
-DEFAULT_CP_PORT_FILE = 'cpports\\checkpoint_ports.xml'
+DEFAULT_CP_PORT_FILE = 'cp\\services_objects.xml'
+DEFAULT_CP_NETOBJ_FILE = 'cp\\network_objects.xml'
 DEFAULT_OUTPUT_FILE = 'network_script.txt'
 DEFAULT_POLICY = 'Standard'
 DEFAULT_INSTALLON = 'vs01'
@@ -61,8 +62,9 @@ ICMP_DIC = { 'unreachable' : 'dest-unreach', \
 			 'mobile-redirect' : 'redirect'}
 			 
 ILLEGAL_DIC = { '' : '', \
-				  'All-' : 'All_', \
-				  '-All' : '_All', \
+				 # 'All-' : 'All_', \		# Removed for BDC PROD
+				 # '-All' : '_All', \		# Removed for BDC PROD
+				  'All-Perimeter' : 'All_Perimeter', \
 				  'In-Domain' : 'In_Domain', \
 				  '(' : '-', \
 				  ')' : '', \
@@ -111,4 +113,4 @@ PORT_DIC = { 'echo' : '7', \
 		'pcanywhere-status' : '5632' \
 		}	
 		
-CONFIG_FILE_SUFFIX = '.Config'
+CONFIG_FILE_SUFFIX = '.CONFG'
