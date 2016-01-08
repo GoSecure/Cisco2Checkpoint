@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 '''
-This script let someone import a Cisco config file and export it in a dbedit compatible checkpoint config file
+This script let someone import a Cisco config file and export it in a dbedit 
+compatible checkpoint config file
 @author: Martin Dubé
 @organization: GoSecure
 @license: Modified BSD License
@@ -41,7 +42,7 @@ sys.path.insert(0, 'lib')
 del sys
 
 # Project imports
-from cisco2checkpoint_lib import Cisco2Checkpoint,Cisco2CheckpointManager
+from cisco2checkpoint import Cisco2Checkpoint,Cisco2CheckpointManager
 from config import *
 
 # System imports
@@ -49,11 +50,11 @@ import argparse
 import os
 
 # Get args
-description = '''GoSecure cisco2checkpoint migration tool.\n
+description = '''GoSecure cisco2checkpoint migration tool.
 
 Known limitations:
  - DBEdit cannot import output if it was generated from a Windows Machine
- - The script cannot add new firewall rules. It can only update currently existing one.
+ - The script cannot add new firewall rules. It can only update existing one.
  - The script support only tcp, udp and icmp protocols (Doesn't support rpc)
  - The script support only Accept and Drop actions
  - The script support only None and Log tracking
@@ -64,27 +65,33 @@ Known limitations:
 epilog = '''
 Examples:
 Print a summary of what is parsed
-  C:\python27\python27.exe cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --summary
+  ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --summary
 
 Search some objects
-  C:\python27\python27.exe cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --search 'obj-172.16.66.0' --format text
-  C:\python27\python27.exe cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --search 'obj-172.16.66.0' --format text --filter CiscoHost
+  ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt'
+          --search 'obj-172.16.66.0' --format text
+  ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt'
+          --search 'obj-172.16.66.0' --format text --filter CiscoHost
 
 Export in a human readable form
-  C:\python27\python27.exe cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format text
+  ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format text
   
 Export for dbedit
-  C:\python27\python27.exe cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format dbedit --policy Standard --installOn fw01 --installOn fw02
+  ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export
+          --format dbedit --policy Standard --installOn fw01 --installOn fw02
 '''
-parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, \
-									description=description, epilog=epilog)
-parser.add_argument('-v','--version', action='version', version='%(prog)s '+C2C_VERSION)
-parser.add_argument('--debug', action='store_true', dest='debug', default=False, \
-                    help='Run the tool in debug mode')
+parser = argparse.ArgumentParser(
+                    formatter_class=argparse.RawDescriptionHelpFormatter, \
+                    description=description, epilog=epilog)
+parser.add_argument('-v','--version', action='version', \
+                    version='%(prog)s '+C2C_VERSION)
+parser.add_argument('--debug', action='store_true', dest='debug', \
+                    default=False, help='Run the tool in debug mode')
 
 actGrp = parser.add_argument_group("Action", "Select one of these action")
-actGrp.add_argument('--summary', '-u', action='store_true', dest='summary', default=False, \
-              help='Print a summary of what is parsed and what would be migrated.')
+actGrp.add_argument('--summary', '-u', action='store_true', dest='summary', 
+            default=False, \
+            help='Print a summary of what is parsed and what would be migrated.')
 actGrp.add_argument('--search', '-s',  action='store', dest='search', default='',\
               type=str, metavar='TEXT', help='Search for a specific object.')
 actGrp.add_argument('--export', '-e', action='store_true', dest='export', default=False, \
@@ -108,11 +115,11 @@ optGrp.add_argument('--format', '-f', action='store', dest='format', default=DEF
 optGrp.add_argument('--cpPortsFile', action='store', dest='cpPortsFile', default=DEFAULT_CP_PORT_FILE, \
               type=str, metavar='FILE', help='Checkpoint xml port file to parse. Default: %s' % DEFAULT_CP_PORT_FILE)
 optGrp.add_argument('--cpNetObjFile', action='store', dest='cpNetObjFile', default=DEFAULT_CP_NETOBJ_FILE, \
-              type=str, metavar='FILE', help='Checkpoint xml network objects file to parse. Default: %s' % DEFAULT_CP_NETOBJ_FILE)			  
+              type=str, metavar='FILE', help='Checkpoint xml network objects file to parse. Default: %s' % DEFAULT_CP_NETOBJ_FILE)              
 optGrp.add_argument('--output', '-o', action='store', dest='output', default=DEFAULT_OUTPUT_FILE, \
               type=str, metavar='FILE', help='Output file. Default: %s' % DEFAULT_OUTPUT_FILE)
-optGrp.add_argument('--startIndex', action='store', dest='startIndex', default=FW_RULE_INDEX, \
-              type=int, metavar='INDEX', help='Index to start importing firewall rules. Default: %i' % FW_RULE_INDEX)
+optGrp.add_argument('--startIndex', action='store', dest='startIndex', default=ACL_RULE_INDEX, \
+              type=int, metavar='INDEX', help='Index to start importing firewall rules. Default: %i' % ACL_RULE_INDEX)
 optGrp.add_argument('--filter', action='append', dest='filter', default=None, \
               type=str, metavar='CLASS', help='Filter a class name, e.g. CiscoHost, CiscoPort, CiscoFwRule. Can use option several times.')
 optGrp.add_argument('--stdout', action='store_true', dest='stdout', default=False, \
@@ -125,116 +132,115 @@ optGrp.add_argument('--flattenInlineSvcGroups', action='store_true', dest='flatt
               help='Flatten groups with prefix DM_INLINE_SERVICE_ so members are added to firewall rules instead of the group.')
 args = parser.parse_args()
 
+if args.debug:
+    print(args)
+
 # Step 1: Instantiate c2c
 if not os.path.isfile(str(args.cpPortsFile)):
-	print('Cannot find checkpoint port file: "%s"' % args.cpPortsFile)
-	exit(1)
+    print('Cannot find checkpoint port file: "%s"' % args.cpPortsFile)
+    exit(1)
 elif not ((args.ciscoFile and os.path.isfile(str(args.ciscoFile))) \
   or (args.ciscoDir and os.path.isdir(args.ciscoDir))): # if dir was specified
-	print('You must specify either a file or a dir (see --ciscoFile and --ciscoDir)')	
-	exit(1)
+    print('You must specify either a file or a dir (see --ciscoFile and --ciscoDir)')    
+    exit(1)
 
 if args.ciscoFile != '':
-	c2c = Cisco2Checkpoint()
-	c2c.setDebug(args.debug)
-	c2c.setPolicy(args.policy)
-	c2c.setInstallOn(args.installOn)
-	c2c.setNatInstallOn(args.natInstallOn)
-	c2c.setDisableRules(args.disableRules)
-	c2c.setFWRuleIndex(args.startIndex)
-	c2c.setFlattenInlineNetGroups(args.flattenInlineNetGroups)
-	c2c.setFlattenInlineSvcGroups(args.flattenInlineSvcGroups)
-	c2c.importConfig(args.cpPortsFile,args.cpNetObjFile,args.ciscoFile)
+    c2c = Cisco2Checkpoint()
 elif args.ciscoDir != '':
-	c2c = Cisco2CheckpointManager()
-	c2c.setDebug(args.debug)
-	c2c.setPolicy(args.policy)
-	c2c.setInstallOn(args.installOn)
-	c2c.setNatInstallOn(args.natInstallOn)
-	c2c.setDisableRules(args.disableRules)
-	c2c.setFWRuleIndex(args.startIndex)
-	c2c.setFlattenInlineNetGroups(args.flattenInlineNetGroups)
-	c2c.setFlattenInlineSvcGroups(args.flattenInlineSvcGroups)
-	c2c.importConfig(args.cpPortsFile,args.cpNetObjFile,args.ciscoDir)
+    c2c = Cisco2CheckpointManager()
+
+c2c.setDebug(args.debug)
+c2c.setPolicy(args.policy)
+c2c.setInstallOn(args.installOn)
+c2c.setNatInstallOn(args.natInstallOn)
+c2c.setDisableRules(args.disableRules)
+c2c.setACLRuleIndex(args.startIndex)
+c2c.setFlattenInlineNetGroups(args.flattenInlineNetGroups)
+c2c.setFlattenInlineSvcGroups(args.flattenInlineSvcGroups)
+
+if args.ciscoFile != '':
+    c2c.importConfig(args.cpPortsFile,args.cpNetObjFile,args.ciscoFile)
+elif args.ciscoDir != '':
+    c2c.importConfig(args.cpPortsFile,args.cpNetObjFile,args.ciscoDir)
 
 # Step 2: Process user request
 #try:
 if args.summary:
-	print(MSG_PREFIX+'Generate Summary')
-	print(c2c.getSummary())
+    print(MSG_PREFIX+'Generate Summary')
+    print(c2c.getSummary())
 elif args.search != '':
-	if args.filter == None:
-		print(MSG_PREFIX+"Searching for an object. No filter")
-		obj_list = c2c.findObjByName(args.search)
-		if len(obj_list) > 0:
-			print(''.join([obj.toString() for obj in obj_list]))
-		else:
-			print(MSG_PREFIX+'No object found')
-	else:
-		print(MSG_PREFIX+"Searching for an object with filter(s): %s" % ','.join(args.filter))
-		obj_list = c2c.findObjByNameType(args.search,args.filter)
-		if len(obj_list) > 0:
-			print(''.join([obj.toString() for obj in obj_list]))
-		else:
-			print(MSG_PREFIX+'No object found')
+    if args.filter == None:
+        print(MSG_PREFIX+"Searching for an object. No filter")
+        obj_list = c2c.findObjByName(args.search)
+        if len(obj_list) > 0:
+            print(''.join([obj.toString() for obj in obj_list]))
+        else:
+            print(MSG_PREFIX+'No object found')
+    else:
+        print(MSG_PREFIX+"Searching for an object with filter(s): %s" % ','.join(args.filter))
+        obj_list = c2c.findObjByNameType(args.search,args.filter)
+        if len(obj_list) > 0:
+            print(''.join([obj.toString() for obj in obj_list]))
+        else:
+            print(MSG_PREFIX+'No object found')
 elif args.export:
-	result = ''
-	if args.filter == None:
-		if args.format == 'text':
-			print(MSG_PREFIX+'Exporting to text format')
-			result = c2c.getAllObjs()
-		elif args.format == 'dbedit':
-			print(MSG_PREFIX+'Exporting to dbedit format')
-			result = c2c.toDBEdit()
-		else:
-			print(WARN_PREFIX+'Invalid format')
-	else:
-		if args.format == 'text':
-			print(MSG_PREFIX+'Exporting to text format')
-			obj_list = c2c.findObjByType(args.filter)
-			if len(obj_list) > 0:
-				result += ''.join([obj.toString() for obj in obj_list])
-			else:
-				print(MSG_PREFIX+'No object found')
-		elif args.format == 'dbedit':
-			print(MSG_PREFIX+'Operation not supported yet')
-		else:
-			print(WARN_PREFIX+'Invalid format')
-	
-	# Print summary
-	print(c2c.getSummary())
+    result = ''
+    if args.filter == None:
+        if args.format == 'text':
+            print(MSG_PREFIX+'Exporting to text format')
+            result = c2c.getAllObjs()
+        elif args.format == 'dbedit':
+            print(MSG_PREFIX+'Exporting to dbedit format')
+            result = c2c.toDBEdit()
+        else:
+            print(WARN_PREFIX+'Invalid format')
+    else:
+        if args.format == 'text':
+            print(MSG_PREFIX+'Exporting to text format')
+            obj_list = c2c.findObjByType(args.filter)
+            if len(obj_list) > 0:
+                result += ''.join([obj.toString() for obj in obj_list])
+            else:
+                print(MSG_PREFIX+'No object found')
+        elif args.format == 'dbedit':
+            print(MSG_PREFIX+'Operation not supported yet')
+        else:
+            print(WARN_PREFIX+'Invalid format')
+    
+    # Print summary
+    print(c2c.getSummary())
 
-	# Output
-	if args.stdout:
-		print(result)
-	else:
-		fd = os.open(args.output, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
-		os.write(fd,result)
-		os.close(fd)
+    # Output
+    if args.stdout:
+        print(result)
+    else:
+        fd = os.open(args.output, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
+        os.write(fd,result)
+        os.close(fd)
 elif args.verify:
-	result = ''
-	args.format = 'text'
-	
-	if args.filter == None:
-		print(MSG_PREFIX+'Exporting to verify format')
-		result = c2c.getAllObjs(True)
-	else:
-		print(MSG_PREFIX+'Exporting to verify format')
-		obj_list = c2c.findObjByType(args.filter)
-		if len(obj_list) > 0:
-			result += ''.join([obj.toString('', True) for obj in obj_list])
-		else:
-			print(MSG_PREFIX+'No object found')
+    result = ''
+    args.format = 'text'
+    
+    if args.filter == None:
+        print(MSG_PREFIX+'Exporting to verify format')
+        result = c2c.getAllObjs(True)
+    else:
+        print(MSG_PREFIX+'Exporting to verify format')
+        obj_list = c2c.findObjByType(args.filter)
+        if len(obj_list) > 0:
+            result += ''.join([obj.toString('', True) for obj in obj_list])
+        else:
+            print(MSG_PREFIX+'No object found')
 
-	# Print summary
-	print(c2c.getSummary())
+    # Print summary
+    print(c2c.getSummary())
 
-	# Output
-	if args.stdout:
-		print(result)
-	else:
-		fd = os.open(args.output, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
-		os.write(fd,result)
-		os.close(fd)
+    # Output
+    if args.stdout:
+        print(result)
+    else:
+        fd = os.open(args.output, os.O_RDWR|os.O_CREAT|os.O_TRUNC)
+        os.write(fd,result)
+        os.close(fd)
 else:
-	parser.print_help()
+    parser.print_help()

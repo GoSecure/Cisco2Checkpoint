@@ -11,6 +11,7 @@ Known limitations
 
 TODO: check group merge with -01
 
+
 v0.17 - 2015-10-13
 Features:
  - Added support to import only new objects or flag differences.
