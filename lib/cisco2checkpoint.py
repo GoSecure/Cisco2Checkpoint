@@ -2229,3 +2229,6 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
         #self.aclRuInCt = sum([obj.aclRuInCt for obj in self.c2c_list])
         self.aclRuCt = len(self.findObjByType(['CiscoACLRule']))
 
+
+class Cisco2CheckpointParser():
+
