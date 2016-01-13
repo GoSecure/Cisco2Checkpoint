@@ -1,7 +1,6 @@
 Known limitations
  - DBEdit cannot import output if it was generated from a Windows Machine
  - The script cannot add new firewall rules. It can only update currently existing one.
- - The script support only tcp, udp, tcp-udp, esp, ah and icmp protocols (Doesn't support rpc)
  - The script support only Accept and Drop actions
  - The script support only None and Log tracking
  - The script does not support "VPN" field yet.
@@ -9,8 +8,17 @@ Known limitations
  - Does not support IPv6 (so any4 or any become any)
  - Does not support "service-object object" as group members
 
-TODO: check group merge with -01
+TODO 
+ - check group merge with -01
+ - Distinct IOS vs ASA
 
+v0.18 - 2016-01-13
+Features:
+ - Added support to protocols: ospf,esp,ah,ahp,vrrp,skip,gre
+ - Added support to "ip access-list"
+ - Reduced ACL parsing code from cisco2checkpoint.py
+ - Optimized parsing by updating ciscoconfparse library
+ - Now using ciscoconfparse with factory=True
 
 v0.17 - 2015-10-13
 Features:

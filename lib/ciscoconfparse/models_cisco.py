@@ -1893,26 +1893,41 @@ class IOSAaaExecAccountingLine(BaseCfgLine):
             return True
         return False
 
-_ACL_PROTOCOLS = 'ip|tcp|udp|ah|eigrp|esp|gre|igmp|igrp|ipinip|ipsec|ospf|pcp|pim|pptp|snp|\d+'
-_ACL_ICMP_PROTOCOLS = 'alternate-address|conversion-error|echo-reply|echo|information-reply|information-request|mask-reply|mask-request|mobile-redirect|parameter-problem|redirect|router-advertisement|router-solicitation|source-quench|time-exceeded|timestamp-reply|timestamp-request|traceroute|unreachable'
-_ACL_LOGLEVELS = r'alerts|critical|debugging|emergencies|errors|informational|notifications|warnings|[0-7]'
-_ACL_PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime|discard|domain|echo|exec|finger|ftp|ftp-data|gopher|h323|hostname|http|https|ident|imap4|irc|kerberos|klogin|kshell|ldap|ldaps|login|lotusnotes|lpd|netbios-ssn|nfs|nntp|ntp|pcanywhere-data|pim-auto-rp|pop2|pop3|pptp|rsh|rtsp|sip|smtp|sqlnet|ssh|sunrpc|tacacs|talk|telnet|uucp|whois|www|netbios-ns|netbios-dgm|\d+'
+_ACL_PROTOCOLS = 'ip|tcp|udp|ahp|ah|eigrp|esp|gre|igmp|igrp|ipinip|ipsec'\
+                '|ospf|pcp|pim|pptp|snp|\d+'
+_ACL_ICMP_PROTOCOLS = 'alternate-address|conversion-error|echo-reply|echo'\
+                '|information-reply|information-request|mask-reply'\
+                '|mask-request|mobile-redirect|parameter-problem|redirect'\
+                '|router-advertisement|router-solicitation|source-quench'\
+                '|time-exceeded|timestamp-reply|timestamp-request|traceroute'\
+                '|unreachable'
+_ACL_LOGLEVELS = r'alerts|critical|debugging|emergencies|errors'\
+                '|informational|notifications|warnings|[0-7]'
+_ACL_PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'\
+                '|discard|domain|echo|exec|finger|tftp|ftp|ftp-data|gopher'\
+                '|h323|hostname|http|https|ident|imap4|irc|kerberos|klogin'\
+                '|kshell|ldap|ldaps|login|lotusnotes|lpd|netbios-ssn|nfs'\
+                '|nntp|ntp|pcanywhere-data|pim-auto-rp|pop2|pop3|pptp|rsh'\
+                '|rtsp|sip|smtp|sqlnet|ssh|sunrpc|tacacs|talk|telnet|uucp'\
+                '|whois|www|netbios-ns|netbios-dgm|netbios-ss|snmptrap|snmp'\
+                '|syslog|isakmp|bootps|bootpc|\d+'
 _RE_ACLOBJECT_STR = r"""(?:                         # Non-capturing parenthesis
 # basic access-list
 # access-list 10 permet 1.2.3.4 0.0.15.255
 (?:^access-list\s+(?P<acl_num0>\S+)
   \s+(?P<action0>permit|deny)
   \s+(?:                       # 10.0.0.0 255.255.255.0
-    (?P<src_any0>any|any4|any6)
-    |(?:object-group\s+(?P<src_objectgroup0>\S+))
-    |(?:object\s+(?P<src_object0>\S+))
-    |(?:host\s+(?P<src_host0a>\S+))
-    |(?:(?P<src_host0b>\S+)\s+0\.0\.0\.0)
-    |(?:(?P<src_network0>\S+)\s+(?P<src_hostmask0>\d+\.\d+\.\d+\.\d+))
+    (?P<dst_any0>any|any4|any6)
+    |(?:object-group\s+(?P<dst_objectgroup0>\S+))
+    |(?:object\s+(?P<dst_object0>\S+))
+    |(?:host\s+(?P<dst_host0a>\S+))
+    |(?:(?P<dst_host0b>\S+)\s+0\.0\.0\.0)
+    |(?:(?P<dst_host0c>\S+))
+    |(?:(?P<dst_network0>\S+)\s+(?P<dst_hostmask0>\d+\.\d+\.\d+\.\d+))
   )
   (?:\s+
     (?P<log0>log)
-    (?:\s+(?P<loglevel0>{1}))?
+    (?:\s+(?P<log_level0>{1}))?
     (?:\s+interval\s+(?P<log_interval0>\d+))?
   )?
   (?:\s+(?P<disable0>disable))?
@@ -1948,7 +1963,7 @@ _RE_ACLOBJECT_STR = r"""(?:                         # Non-capturing parenthesis
   )
   (?:\s+
     (?P<log1>log)
-    (?:\s+(?P<loglevel1>{1}))?
+    (?:\s+(?P<log_level1>{1}))?
     (?:\s+interval\s+(?P<log_interval1>\d+))?
   )?
   (?:\s+(?P<disable1>disable))?
@@ -2014,20 +2029,15 @@ class IOSACLLine(BaseCfgLine):
     @property
     def src_addr(self):
         """
-         (?P<src_any0>any|any4|any6)
-        |(?:object-group\s+(?P<src_objectgroup0>\S+))
-        |(?:object\s+(?P<src_object0>\S+))
-        |(?:host\s+(?P<src_host0a>\S+))
-        |(?:(?P<src_host0b>\S+)\s+0\.0\.0\.0\)
-        |(?:(?P<src_network0>\S+)\s+(?P<src_hostmask0>\d+\.\d+\.\d+\.\d+))
+         (?P<src_any1>any|any4|any6)
+        |(?:object-group\s+(?P<src_objectgroup1>\S+))
+        |(?:object\s+(?P<src_object1>\S+))
+        |(?:host\s+(?P<src_host1a>\S+))
+        |(?:(?P<src_host1b>\S+)\s+0\.0\.0\.0\)
+        |(?:(?P<src_network1>\S+)\s+(?P<src_hostmask1>\d+\.\d+\.\d+\.\d+))
         """
         mm_r = self._mm_results
-        return mm_r['src_any0'] or mm_r['src_objectgroup0'] \
-                or mm_r['src_object0'] or mm_r['src_host0a'] \
-                or mm_r['src_host0b'] \
-                or mm_r['src_network0'] \
-                \
-                or mm_r['src_any1'] or mm_r['src_objectgroup1'] \
+        return mm_r['src_any1'] or mm_r['src_objectgroup1'] \
                 or mm_r['src_object1'] or mm_r['src_host1a'] \
                 or mm_r['src_host1b'] \
                 or mm_r['src_network1']
@@ -2041,7 +2051,7 @@ class IOSACLLine(BaseCfgLine):
         elif method == 'host':
             return '0.0.0.0'
         elif method == 'network':
-            return mm_r['src_hostmask0'] or mm_r['src_hostmask1']
+            return mm_r['src_hostmask1']
         elif method == 'object-group' or method == 'object':
             return None
         else:
@@ -2050,17 +2060,15 @@ class IOSACLLine(BaseCfgLine):
     @property
     def src_addr_method(self):
         mm_r = self._mm_results
-        if mm_r['src_any0'] or mm_r['src_any1']:
+        if mm_r['src_any1']:
             return 'any'
-        elif mm_r['src_objectgroup0'] or mm_r['src_objectgroup1']:
+        elif mm_r['src_objectgroup1']:
             return 'object-group'
-        elif mm_r['src_object0'] or mm_r['src_object1']:
+        elif mm_r['src_object1']:
             return 'object'
-        elif mm_r['src_host0a'] or mm_r['src_host0b'] \
-                or mm_r['src_host1a'] or mm_r['src_host1b']:
+        elif mm_r['src_host1a'] or mm_r['src_host1b']:
             return 'host'
-        elif (mm_r['src_network0'] and mm_r['src_hostmask0']) \
-                or (mm_r['src_network1'] or mm_r['src_hostmask1']):
+        elif (mm_r['src_network1'] or mm_r['src_hostmask1']):
             return 'network'
         else:
             raise ValueError("Cannot parse ACL source address method for '{0}'".format(self.text))
@@ -2076,7 +2084,12 @@ class IOSACLLine(BaseCfgLine):
         |(?:(?P<dst_network1>\S+)\s+(?P<dst_hostmask1>\d+\.\d+\.\d+\.\d+))
         """
         mm_r = self._mm_results
-        return mm_r['dst_any1'] or mm_r['dst_objectgroup1'] \
+        return mm_r['dst_any0'] or mm_r['dst_objectgroup0'] \
+                or mm_r['dst_object0'] or mm_r['dst_host0a'] \
+                or mm_r['dst_host0b'] \
+                or mm_r['dst_network0'] \
+                \
+                or mm_r['dst_any1'] or mm_r['dst_objectgroup1'] \
                 or mm_r['dst_object1'] or mm_r['dst_host1a'] \
                 or mm_r['dst_host1b'] \
                 or mm_r['dst_network1']
@@ -2090,7 +2103,7 @@ class IOSACLLine(BaseCfgLine):
         elif method == 'host':
             return '0.0.0.0'
         elif method == 'network':
-            return mm_r['dst_hostmask1']
+            return mm_r['dst_hostmask0'] or mm_r['dst_hostmask1']
         elif method == 'object-group' or method == 'object':
             return None
         else:
@@ -2099,15 +2112,17 @@ class IOSACLLine(BaseCfgLine):
     @property
     def dst_addr_method(self):
         mm_r = self._mm_results
-        if mm_r['dst_any1']:
+        if mm_r['dst_any0'] or mm_r['dst_any1']:
             return 'any'
-        elif mm_r['dst_objectgroup1']:
+        elif mm_r['dst_objectgroup0'] or mm_r['dst_objectgroup1']:
             return 'object-group'
-        elif mm_r['dst_object1']:
+        elif mm_r['dst_object0'] or mm_r['dst_object1']:
             return 'object'
-        elif mm_r['dst_host1a'] or mm_r['dst_host1b']:
+        elif mm_r['dst_host0a'] or mm_r['dst_host0b']\
+            or mm_r['dst_host1a'] or mm_r['dst_host1b']:
             return 'host'
-        elif mm_r['dst_network1'] and mm_r['dst_hostmask1']:
+        elif (mm_r['dst_network0'] and mm_r['dst_hostmask0'])\
+            or (mm_r['dst_network1'] and mm_r['dst_hostmask1']):
             return 'network'
         else:
             return None
@@ -2134,7 +2149,7 @@ class IOSACLLine(BaseCfgLine):
             retval['log_interval'] = -1
             retval['log_level'] = ''
         else:
-            retval['log_level'] = mm_r['loglevel1'] or mm_r['loglevel2'] or mm_r['loglevel4'] or 'informational'
+            retval['log_level'] = mm_r['log_level1'] or mm_r['log_level2'] or mm_r['log_level4'] or 'informational'
             retval['log_interval'] = int(mm_r['log_interval1'] \
                 or mm_r['log_interval2'] or mm_r['log_interval4'] or 300)
 
@@ -2167,12 +2182,15 @@ class IOSIPACLLine(BaseCfgLine):
             return True
         return False
 
-    _IPACL_NAME_RE_STR = r'^ip access-list \s+(\S+9\/\.\s]+)\s*'
-    _IPACL_NAME_REGEX = re.compile(_IPACL_NAME_RE_STR)
     @property
     def name(self):
-        name = self.re_match(self._IPACL_NAME_REGEX).strip()
-        return name
+        mm_r = self._mm_results
+        return mm_r['name']
+
+    @property
+    def type(self):
+        mm_r = self._mm_results
+        return mm_r['type']
 
 _RE_IPACLOBJECT_CHILD_STR = r"""(?:           # Non-capturing parenthesis
 # remark
@@ -2199,7 +2217,10 @@ _RE_IPACLOBJECT_CHILD_STR = r"""(?:           # Non-capturing parenthesis
   )
   (?:\s+
     (?:                         # source port
-       (?:(?P<src_port_op1>eq|neq|lt|gt)\s+(?P<src_port1>\S+))
+      (?:
+        (?P<src_port_op1>eq|neq|lt|gt)
+        \s(?P<src_port1>(?:(?:{3})\s?)+)
+      )
       |(?:range\s+(?P<src_port_low1>\S+)\s+(?P<src_port_high1>\S+))
       |(?:object-group\s+(?P<src_service_object1>\S+))
     )
@@ -2224,7 +2245,7 @@ _RE_IPACLOBJECT_CHILD_STR = r"""(?:           # Non-capturing parenthesis
   )?
   (?:\s+
     (?P<log1>log)
-    (?:\s+(?P<loglevel1>{1}))?
+    (?:\s+(?P<log_level1>{1}))?
     (?:\s+interval\s+(?P<log_interval1>\d+))?
   )?
   (?:\s+(?P<disable1>disable))?
@@ -2263,7 +2284,7 @@ _RE_IPACLOBJECT_CHILD_STR = r"""(?:           # Non-capturing parenthesis
   (?:\s+(?P<icmp_proto2>{2}|\d+))?
   (?:\s+
     (?P<log2>log)
-    (?:\s+(?P<loglevel2>{1}))?
+    (?:\s+(?P<log_level2>{1}))?
     (?:\s+interval\s+(?P<log_interval2>\d+))?
   )?
   (?:\s+(?P<disable2>disable))?
@@ -2271,7 +2292,24 @@ _RE_IPACLOBJECT_CHILD_STR = r"""(?:           # Non-capturing parenthesis
     (?:\s+(?P<inactive2>inactive))
    |(?:\s+time-range\s+(?P<time_range2>\S+))
   )?
+ \s*$)
+
+# For standard ACLs
+#ip access-list standard ALLOW_MOD_OSPF_AD
+# permit 10.0.0.0 0.255.255.255
+|(^\s+(?P<action3>permit|deny)
+  (?:\s+       # destination addr
+    (?:
+      (?P<dst_any3>any|any4|any6|0\.0\.0\.0)
+      |(?:object-group\s+(?P<dst_objectgroup3>\S+))
+      |(?:object\s+(?P<dst_object3>\S+))
+      |(?:host\s+(?P<dst_host3a>\S+))
+      |(?:(?P<dst_host3b>\S+)\s+0\.0\.0\.0)
+      |(?:(?P<dst_host3c>\S+))
+      |(?:(?P<dst_network3>\S+)\s+(?P<dst_hostmask3>\d+\.\d+\.\d+\.\d+))
+    )
   )
+ \s*$)
 )                                         # Close non-capture parens
 """.format(_ACL_PROTOCOLS, _ACL_LOGLEVELS, _ACL_ICMP_PROTOCOLS, _ACL_PORT_NAMES)
 _RE_IPACLOBJECT_CHILD = re.compile(_RE_IPACLOBJECT_CHILD_STR, re.VERBOSE)
@@ -2293,15 +2331,25 @@ class IOSIPACLChildLine(BaseCfgLine):
 
     @classmethod
     def is_object_for(cls, line="", re=re):
-        aclChild_regex = r'^\s+remark|permit|deny\s+(\S+.+)'
+        aclChild_regex = r'^\s+remark|permit|deny\s+(\S+.+)$'
         if re.search(aclChild_regex, line):
             return True
         return False
 
     @property
+    def name(self):
+        return self.parent.name
+
+    @property
     def action(self):
         mm_r = self._mm_results
-        return mm_r['action0'] or mm_r['action1'] or mm_r['action2']
+        return mm_r['action0'] or mm_r['action1'] or mm_r['action2'] \
+                or mm_r['action3']
+
+    @property
+    def remark(self):
+        mm_r = self._mm_results
+        return mm_r['remark']
 
     @property
     def proto(self):
@@ -2318,10 +2366,10 @@ class IOSIPACLChildLine(BaseCfgLine):
     @property
     def proto_method(self):
         mm_r = self._mm_results
-        if mm_r['service_object1']:
-            return 'object-group'
-        elif mm_r['protocol1'] or mm_r['protocol2']:
+        if mm_r['protocol1'] or mm_r['protocol2']:
             return 'proto'
+        elif mm_r['service_object1']:
+            return 'object-group'
         elif self.action == 'remark':
             return 'remark'
 
@@ -2357,10 +2405,9 @@ class IOSIPACLChildLine(BaseCfgLine):
         elif method == 'network':
             return  mm_r['src_hostmask1'] or mm_r['src_hostmask2']
         elif method == 'object-group' or method == 'object' \
-                or method == 'remark':
+                or method == 'remark' \
+                or self.parent.type == 'standard': # standard acl = no src ip
             return None
-        else:
-            raise ValueError("Cannot parse IP ACL source hostmask for '{0}'".format(self.text))
 
     @property
     def src_addr_method(self):
@@ -2379,8 +2426,8 @@ class IOSIPACLChildLine(BaseCfgLine):
             return 'network'
         elif self.action == 'remark':
             return 'remark'
-        else:
-            raise ValueError("Cannot parse IP ACL source address method for '{0}'".format(self.text))
+        elif self.parent.type == 'standard':    # standard acl = no src ip
+            return None
 
     @property
     def src_port(self):
@@ -2423,7 +2470,12 @@ class IOSIPACLChildLine(BaseCfgLine):
                 or mm_r['dst_any2'] or mm_r['dst_objectgroup2'] \
                 or mm_r['dst_object2'] or mm_r['dst_host2a'] \
                 or mm_r['dst_host2b'] \
-                or mm_r['dst_network2']
+                or mm_r['dst_network2'] \
+                \
+                or mm_r['dst_any3'] or mm_r['dst_objectgroup3'] \
+                or mm_r['dst_object3'] or mm_r['dst_host3a'] \
+                or mm_r['dst_host3b'] or mm_r['dst_host3c']\
+                or mm_r['dst_network3']
 
     @property
     def dst_hostmask(self):
@@ -2434,7 +2486,8 @@ class IOSIPACLChildLine(BaseCfgLine):
         elif method == 'host':
             return '0.0.0.0'
         elif method == 'network':
-            return mm_r['dst_hostmask1'] or mm_r['dst_hostmask2']
+            return mm_r['dst_hostmask1'] or mm_r['dst_hostmask2'] \
+                    or mm_r['dst_hostmask3']
         elif method == 'object-group' or method == 'object' \
                 or method == 'remark':
             return None
@@ -2444,17 +2497,21 @@ class IOSIPACLChildLine(BaseCfgLine):
     @property
     def dst_addr_method(self):
         mm_r = self._mm_results
-        if mm_r['dst_any1'] or mm_r['dst_any2']:
+        if mm_r['dst_any1'] or mm_r['dst_any2'] or mm_r['dst_any3']:
             return 'any'
-        elif mm_r['dst_objectgroup1'] or mm_r['dst_objectgroup2']:
+        elif mm_r['dst_objectgroup1'] or mm_r['dst_objectgroup2'] \
+                or mm_r['dst_objectgroup3']:
             return 'object-group'
-        elif mm_r['dst_object1'] or mm_r['dst_object2']:
+        elif mm_r['dst_object1'] or mm_r['dst_object2'] or mm_r['dst_object3']:
             return 'object'
         elif mm_r['dst_host1a'] or mm_r['dst_host1b'] \
-                or mm_r['dst_host2a'] or mm_r['dst_host2b']:
+                or mm_r['dst_host2a'] or mm_r['dst_host2b'] \
+                or mm_r['dst_host3a'] or mm_r['dst_host3b'] \
+                or mm_r['dst_host3c']:
             return 'host'
         elif (mm_r['dst_network1'] and mm_r['dst_hostmask1']) \
-                or (mm_r['dst_network2'] and mm_r['dst_hostmask2']):
+                or (mm_r['dst_network2'] and mm_r['dst_hostmask2']) \
+                or (mm_r['dst_network3'] and mm_r['dst_hostmask3']):
             return 'network'
         elif self.action == 'remark':
             return 'remark'
@@ -2482,4 +2539,57 @@ class IOSIPACLChildLine(BaseCfgLine):
             return 'range'
         elif mm_r['dst_service_object1']:
             return 'object-group'
+
+#  (?:\s+
+#    (?P<log1>log)
+#    (?:\s+(?P<log_level1>{1}))?
+#    (?:\s+interval\s+(?P<log_interval1>\d+))?
+#  )?
+#  (?:\s+(?P<disable1>disable))?
+#  (?:
+#    (?:\s+(?P<inactive1>inactive))
+#   |(?:\s+time-range\s+(?P<time_range1>\S+))
+#  )?
+#  (?:\s+(?P<established>established))?     # established = temporary hack.
+    @property
+    def log(self):
+        mm_r = self._mm_results
+        return mm_r['log1'] or mm_r['log2']
+
+    @property
+    def log_level(self):
+        mm_r = self._mm_results
+        return mm_r['log_level1'] or mm_r['log_level2']
+
+    @property
+    def log_interval(self):
+        mm_r = self._mm_results
+        return mm_r['log_interval1'] or mm_r['log_interval2']
+
+    @property
+    def disable(self):
+        mm_r = self._mm_results
+        return mm_r['disable1'] or mm_r['disable2']
+
+    @property
+    def inactive(self):
+        mm_r = self._mm_results
+        return mm_r['inactive1'] or mm_r['inactive2']
+
+    @property
+    def time_range(self):
+        mm_r = self._mm_results
+        return mm_r['time_range1'] or mm_r['time_range2']
+
+    # TODO: This should not be needed
+    # Otherwise: fix code to support this attribute.
+    @property
+    def established(self):
+        mm_r = self._mm_results
+        return mm_r['established']
+
+
+
+
+
 
