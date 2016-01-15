@@ -110,6 +110,10 @@ optGrp.add_argument('--installOn', '-i', action='store', dest='installOn', defau
               type=str, metavar='FWs', help='Specify the checkpoint object to install rules on. ')
 optGrp.add_argument('--natInstallOn', action='store', dest='natInstallOn', default=DEFAULT_NAT_INSTALLON, \
               type=str, metavar='FW', help='The firewall to use for all hide and static NAT rules.')
+optGrp.add_argument('--color', action='store', dest='color', default=DEFAULT_NEW_OBJ_COLOR, \
+              type=str, metavar='COLOR', help='The color to use for new objects.')
+optGrp.add_argument('--force-log', action='store_true', dest='forceLog', default=False, \
+              help='Force track=Log on all firewall rules')
 optGrp.add_argument('--format', '-f', action='store', dest='format', default=DEFAULT_FORMAT, \
               type=str, help='Specify the format. Valid values: dbedit, text. Default: %s' % DEFAULT_FORMAT)
 optGrp.add_argument('--cpPortsFile', action='store', dest='cpPortsFile', default=DEFAULT_CP_PORT_FILE, \
@@ -153,6 +157,8 @@ c2c.setDebug(args.debug)
 c2c.setPolicy(args.policy)
 c2c.setInstallOn(args.installOn)
 c2c.setNatInstallOn(args.natInstallOn)
+c2c.setColor(args.color)
+c2c.setForceLog(args.forceLog)
 c2c.setDisableRules(args.disableRules)
 c2c.setACLRuleIndex(args.startIndex)
 c2c.setFlattenInlineNetGroups(args.flattenInlineNetGroups)

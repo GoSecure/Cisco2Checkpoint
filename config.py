@@ -9,6 +9,7 @@ DEFAULT_OUTPUT_FILE = 'network_script.txt'
 DEFAULT_POLICY = 'Standard'
 DEFAULT_INSTALLON = 'vs01'
 DEFAULT_NAT_INSTALLON = 'vs01'
+DEFAULT_NEW_OBJ_COLOR = 'black'
 
 WARN_PREFIX = '#[-] '
 MSG_PREFIX = '#[+] '
@@ -101,6 +102,7 @@ PORT_DIC = { 'echo' : '7', \
         'netbios-ns' : '137', \
         'netbios-dgm' : '138', \
         'netbios-ssn' : '139', \
+        'netbios-ss' : '139', \
         'imap4' : '143', \
         'snmp' : '161', \
         'snmptrap' : '162', \
@@ -108,6 +110,7 @@ PORT_DIC = { 'echo' : '7', \
         'ldaps' : '636', \
         'https' : '443', \
         'isakmp' : '500', \
+        'cmd' : '514', \
         'syslog' : '514', \
         'lpd' : '515', \
         'rtsp' : '554', \

@@ -11,6 +11,7 @@ Known limitations
 TODO 
  - check group merge with -01
  - Distinct IOS vs ASA
+ - Add a "--no-any-any" feature to avoid import of any/any rules
 
 v0.18 - 2016-01-13
 Features:
