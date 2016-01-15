@@ -1158,6 +1158,22 @@ class CiscoACLRule(CiscoGroup):
  # modify fw_policies ##{1} rule:0:dst:op ''
  # addelement fw_policies ##{1} rule:0:services:'' globals:Any
  # modify fw_policies ##{1} rule:0:services:op ''
+ #
+ # Working way to create new firewall rules
+ # Note: after the first line, an item is appended so the number of rules must 
+ # be known
+ # addelement fw_policies ##Standard rule security_rule
+ # modify fw_policies ##Standard rule:0:disabled false
+ # modify fw_policies ##Standard rule:0:src rule_source
+ # modify fw_policies ##Standard rule:0:dst rule_destination
+ # modify fw_policies ##Standard rule:0:services rule_services
+ # modify fw_policies ##Standard rule:0:install rule_install
+ # addelement fw_policies ##Standard rule:0:src:'' network_objects:Net_192.168.3.0
+ # addelement fw_policies ##Standard rule:0:dst:'' network_objects:Net_192.168.3.0
+ # addelement fw_policies ##Standard rule:0:services:'' globals:Any
+ # addelement fw_policies ##Standard rule:0:install:'' globals:Any
+ # addelement fw_policies ##Standard rule:0:action drop_action:drop
+ #
     src = None
     dst = None
     port = None
@@ -1369,7 +1385,6 @@ class CiscoACLRule(CiscoGroup):
         elif self.src != None:
             ret = ''
             for src in self.src:
-                #ret += "rmelement fw_policies ##{0} rule:{1}:src:'' network_objects:{2}\n".format(self.policy, ruleID, self.src.name)
                 ret += "addelement fw_policies ##{0} rule:{1}:src:'' network_objects:{2}\n".format(self.policy, ruleID, src.name)
             return ret
         else:
@@ -1381,7 +1396,6 @@ class CiscoACLRule(CiscoGroup):
         elif self.dst != None:
             ret = ''
             for dst in self.dst:
-                #ret += "rmelement fw_policies ##{0} rule:{1}:dst:'' network_objects:{2}\n".format(self.policy, ruleID, self.dst.name)
                 ret += "addelement fw_policies ##{0} rule:{1}:dst:'' network_objects:{2}\n".format(self.policy, ruleID, dst.name)
             return ret
         else:
@@ -1393,7 +1407,6 @@ class CiscoACLRule(CiscoGroup):
         elif self.port != None:
             ret = ''
             for port in self.port:
-                #ret += "rmelement fw_policies ##{0} rule:{1}:services:'' services:{2}\n".format(self.policy, ruleID, self.port.name)
                 ret += "addelement fw_policies ##{0} rule:{1}:services:'' services:{2}\n".format(self.policy, ruleID, port.name)
             return ret
         else:
@@ -1476,7 +1489,7 @@ class CiscoACLRule(CiscoGroup):
             ret += indent+self.getVerify()
         return ret
 
-    def toDBEdit(self):
+    def toDBEditLegacy(self):
         global ACL_RULE_INDEX
         ACL_RULE_INDEX = ACL_RULE_INDEX + 1
         ret = ''
@@ -1506,6 +1519,40 @@ class CiscoACLRule(CiscoGroup):
             self._getPortToDBEdit(ACL_RULE_INDEX), \
             self._getDisabledToDBEdit(), \
             ACL_RULE_INDEX)    
+        return ret
+
+    def toDBEdit(self):
+        global ACL_RULE_INDEX
+        ret = ''
+        ret += '''# Creating new rule: {0}
+addelement fw_policies ##{1} rule security_rule
+modify fw_policies ##{1} rule:{11}:name "{0}"
+modify fw_policies ##{1} rule:{11}:comments "{2}"
+modify fw_policies ##{1} rule:{11}:disabled {10}
+modify fw_policies ##{1} rule:{11}:src rule_source
+modify fw_policies ##{1} rule:{11}:dst rule_destination
+modify fw_policies ##{1} rule:{11}:services rule_services
+modify fw_policies ##{1} rule:{11}:install rule_install
+{7} modify fw_policies ##{1} rule:{11}:src:op ''
+{8} modify fw_policies ##{1} rule:{11}:dst:op ''
+{9} modify fw_policies ##{1} rule:{11}:services:op ''
+addelement fw_policies ##{1} rule:{11}:action {6}
+addelement fw_policies ##{1} rule:{11}:install:'' {5}
+addelement fw_policies ##{1} rule:{11}:track {3}
+addelement fw_policies ##{1} rule:{11}:time {4}
+ '''.format(self.name, \
+            self.policy, \
+            self.getDesc(), \
+            self._getTracksToDBEdit(), \
+            self._getTimeToDBEdit(), \
+            self._getInstallOnToDBEdit(), \
+            self._getActionToDBEdit(), \
+            self._getSrcToDBEdit(ACL_RULE_INDEX), \
+            self._getDstToDBEdit(ACL_RULE_INDEX), \
+            self._getPortToDBEdit(ACL_RULE_INDEX), \
+            self._getDisabledToDBEdit(), \
+            ACL_RULE_INDEX)    
+        ACL_RULE_INDEX = ACL_RULE_INDEX + 1
         return ret
 
 class CiscoParser():
