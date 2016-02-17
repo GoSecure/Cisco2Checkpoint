@@ -92,60 +92,71 @@ actGrp = parser.add_argument_group("Action", "Select one of these action")
 actGrp.add_argument('--summary', '-u', action='store_true', dest='summary', 
             default=False, \
             help='Print a summary of what is parsed and what would be migrated.')
-actGrp.add_argument('--search', '-s',  action='store', dest='search', default='',\
-              type=str, metavar='TEXT', help='Search for a specific object.')
 actGrp.add_argument('--export', '-e', action='store_true', dest='export', default=False, \
               help='Export configuration. Use --format to determine format.')
 actGrp.add_argument('--verify', action='store_true', dest='verify', default=False, \
               help='Export configuration like --export but in text format and in a verifyable format.')
+actGrp.add_argument('--search', '-s',  action='store', dest='search', default='',\
+              type=str, metavar='TEXT', help='Search for a specific object.')
 
-optGrp = parser.add_argument_group("Option", "Use any depending on chosen action")
-optGrp.add_argument('--ciscoFile', '-c', action='store', dest='ciscoFile', default='', \
-              type=str, metavar='FILE', help='[Mandatory] Cisco config file to parse.')
-optGrp.add_argument('--ciscoDir', '-d', action='store', dest='ciscoDir', default='', \
+cnfGrp = parser.add_argument_group("Import config")
+cnfGrp.add_argument('--ciscoFile', '-c', action='store', dest='ciscoFile', default='', \
+              type=str, metavar='FILE', help='Cisco config file to parse.')
+cnfGrp.add_argument('--ciscoDir', '-d', action='store', dest='ciscoDir', default='', \
               type=str, metavar='DIR', help='config directory to parse. Will read only *.Config files')
-optGrp.add_argument('--policy', '-p', action='store', dest='policy', default=DEFAULT_POLICY, \
-              type=str, help='The policy name. Relevant with --export only. Default: %s' % DEFAULT_POLICY)
-optGrp.add_argument('--installOn', '-i', action='store', dest='installOn', default=DEFAULT_INSTALLON, \
-              type=str, metavar='FWs', help='Specify the checkpoint object to install rules on. ')
-optGrp.add_argument('--natInstallOn', action='store', dest='natInstallOn', default=DEFAULT_NAT_INSTALLON, \
-              type=str, metavar='FW', help='The firewall to use for all hide and static NAT rules.')
-optGrp.add_argument('--color', action='store', dest='color', default=DEFAULT_NEW_OBJ_COLOR, \
-              type=str, metavar='COLOR', help='The color to use for new objects.')
-optGrp.add_argument('--force-log', action='store_true', dest='forceLog', default=False, \
-              help='Force track=Log on all firewall rules')
+cnfGrp.add_argument('--cpPortsFile', action='store', dest='cpPortsFile', default=DEFAULT_CP_PORT_FILE, \
+              type=str, metavar='FILE', help='Checkpoint xml port file to parse. Default: %s' % DEFAULT_CP_PORT_FILE)
+cnfGrp.add_argument('--cpNetObjFile', action='store', dest='cpNetObjFile', default=DEFAULT_CP_NETOBJ_FILE, \
+              type=str, metavar='FILE', help='Checkpoint xml network objects file to parse. Default: %s' % DEFAULT_CP_NETOBJ_FILE)              
+cnfGrp.add_argument('--syntax', action='store', dest='syntax', default=DEFAULT_SYNTAX, \
+              type=str, help='Specify the cisco syntax. Valid values: ios, asa. '\
+                    'Default: %s' % DEFAULT_SYNTAX)
+
+optGrp = parser.add_argument_group("Options")
 optGrp.add_argument('--format', '-f', action='store', dest='format', default=DEFAULT_FORMAT, \
               type=str, help='Specify the format. Valid values: dbedit, text. Default: %s' % DEFAULT_FORMAT)
-optGrp.add_argument('--cpPortsFile', action='store', dest='cpPortsFile', default=DEFAULT_CP_PORT_FILE, \
-              type=str, metavar='FILE', help='Checkpoint xml port file to parse. Default: %s' % DEFAULT_CP_PORT_FILE)
-optGrp.add_argument('--cpNetObjFile', action='store', dest='cpNetObjFile', default=DEFAULT_CP_NETOBJ_FILE, \
-              type=str, metavar='FILE', help='Checkpoint xml network objects file to parse. Default: %s' % DEFAULT_CP_NETOBJ_FILE)              
 optGrp.add_argument('--output', '-o', action='store', dest='output', default=DEFAULT_OUTPUT_FILE, \
               type=str, metavar='FILE', help='Output file. Default: %s' % DEFAULT_OUTPUT_FILE)
-optGrp.add_argument('--startIndex', action='store', dest='startIndex', default=ACL_RULE_INDEX, \
-              type=int, metavar='INDEX', help='Index to start importing firewall rules. Default: %i' % ACL_RULE_INDEX)
 optGrp.add_argument('--filter', action='append', dest='filter', default=None, \
               type=str, metavar='CLASS', help='Filter a class name, e.g. CiscoHost, CiscoPort, CiscoFwRule. Can use option several times.')
 optGrp.add_argument('--stdout', action='store_true', dest='stdout', default=False, \
               help='Print output to stdout.')
-optGrp.add_argument('--disableRules', action='store_true', dest='disableRules', default=False, \
+
+expGrp = parser.add_argument_group("Export Modifiers")
+expGrp.add_argument('--policy', action='store', dest='policy', default=DEFAULT_POLICY, \
+              type=str, help='The policy name. Relevant with --export only. Default: %s' % DEFAULT_POLICY)
+expGrp.add_argument('--installOn', action='store', dest='installOn', default=DEFAULT_INSTALLON, \
+              type=str, metavar='FWs', help='Specify the checkpoint object to install rules on. ')
+expGrp.add_argument('--natInstallOn', action='store', dest='natInstallOn', default=DEFAULT_NAT_INSTALLON, \
+              type=str, metavar='FW', help='The firewall to use for all hide and static NAT rules.')
+expGrp.add_argument('--color', action='store', dest='color', default=DEFAULT_NEW_OBJ_COLOR, \
+              type=str, metavar='COLOR', help='The color to use for new objects.')
+expGrp.add_argument('--force-log', action='store_true', dest='forceLog', default=False, \
+              help='Force track=Log on all firewall rules')
+expGrp.add_argument('--startIndex', action='store', dest='startIndex', default=ACL_RULE_INDEX, \
+              type=int, metavar='INDEX', help='Index to start importing firewall rules. Default: %i' % ACL_RULE_INDEX)
+expGrp.add_argument('--disableRules', action='store_true', dest='disableRules', default=False, \
               help='Disable all firewall rules.')
-optGrp.add_argument('--flattenInlineNetGroups', action='store_true', dest='flattenInlineNetGroups', default=False, \
+expGrp.add_argument('--flattenInlineNetGroups', action='store_true', dest='flattenInlineNetGroups', default=False, \
               help='Flatten groups with prefix DM_INLINE_NETWORK_ so members are added to firewall rules instead of the group.')
-optGrp.add_argument('--flattenInlineSvcGroups', action='store_true', dest='flattenInlineSvcGroups', default=False, \
+expGrp.add_argument('--flattenInlineSvcGroups', action='store_true', dest='flattenInlineSvcGroups', default=False, \
               help='Flatten groups with prefix DM_INLINE_SERVICE_ so members are added to firewall rules instead of the group.')
+
 args = parser.parse_args()
 
 if args.debug:
     print(args)
 
-# Step 1: Instantiate c2c
+# Step 1: Validate user input
 if not os.path.isfile(str(args.cpPortsFile)):
     print('Cannot find checkpoint port file: "%s"' % args.cpPortsFile)
     exit(1)
 elif not ((args.ciscoFile and os.path.isfile(str(args.ciscoFile))) \
   or (args.ciscoDir and os.path.isdir(args.ciscoDir))): # if dir was specified
     print('You must specify either a file or a dir (see --ciscoFile and --ciscoDir)')    
+    exit(1)
+if not (args.syntax in ['ios','asa']):
+    print('Invalid --syntax value. RTFM.')
     exit(1)
 
 if args.ciscoFile != '':
@@ -154,6 +165,7 @@ elif args.ciscoDir != '':
     c2c = Cisco2CheckpointManager()
 
 c2c.setDebug(args.debug)
+c2c.setSyntax(args.syntax)
 c2c.setPolicy(args.policy)
 c2c.setInstallOn(args.installOn)
 c2c.setNatInstallOn(args.natInstallOn)

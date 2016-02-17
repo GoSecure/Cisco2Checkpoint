@@ -9,6 +9,7 @@ Known limitations
  - Does not support "service-object object" as group members
 
 TODO 
+ - fix DC_PORT_RANGE with source + destination. Fix parser ideally
  - check group merge with -01
  - Distinct IOS vs ASA
  - Add a "--no-any-any" feature to avoid import of any/any rules

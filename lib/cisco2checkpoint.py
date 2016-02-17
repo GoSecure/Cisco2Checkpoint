@@ -1,5 +1,4 @@
 from ciscoconfparse import CiscoConfParse
-from singleton import Singleton
 from config import *
 from pprint import pprint
 import xml.etree.ElementTree as et
@@ -427,11 +426,11 @@ class CiscoGroup(CiscoObject):
             self.c2c.addObj(newObj)
             self.c2c.hostCrCt += 1
             #raise C2CException('Cannot create a nat external IP "%s" on the fly.' % name)
-        #elif isipaddress(type):
-        #    subnet,mask = type,v1        # Yes this is ugly.
-        #    newObj = CiscoNet(self, None, NEW_NET_PREFIX+subnet, subnet, mask)
-        #    self.c2c.addObj(newObj)
-        #    self.members.append(newObj)
+        elif isipaddress(type):
+            subnet,mask = type,v1        # Yes this is ugly.
+            newObj = CiscoNet(self, None, NEW_NET_PREFIX+subnet, subnet, mask)
+            self.c2c.addObj(newObj)
+            self.members.append(newObj)
         else:
             raise C2CException('Invalid type: %s' % type)
 
@@ -1357,6 +1356,7 @@ class CiscoACLRule(CiscoGroup):
         proto_m = parsedObj.proto_method
         port = parsedObj.dst_port
         port_m = parsedObj.dst_port_method
+        #print("%s %s %s %s" % (proto,proto_m,port,port_m))
         if proto_m == 'proto':
             if port_m == 'eq':
                 portList = port.split(' ')
@@ -1375,12 +1375,22 @@ class CiscoACLRule(CiscoGroup):
             elif port_m == None:        # this means any
                 return [self._getAnyPort(proto)]
         elif proto_m == 'object-group':
-           raise C2CException('Proto method "%s" not implemented yet.' % \
-                              proto_m)
+            obj = self._getMemberObj('port-group',proto)
+            if obj:
+                return [obj]
+            else:
+                #raise C2CException('Proto method "%s" not implemented yet.' % \
+                #                  proto_m)
+                raise C2CException('Proto "%s" is not defined.' % \
+                                  proto)
         elif parsedObj.parent.type == 'standard':   # standard = any
             return [self._getAnyPort('ip')]
         elif proto_m == 'remark':
             return None
+        else:
+            print("%s" % (parsedObj.text))
+            print("%s %s %s %s" % (proto,proto_m,port,port_m))
+            raise C2CException("Unrecognized proto/port")
         
     def _getAnyPort(self, proto):
         if proto in ['ip','tcp','udp']:
@@ -1604,9 +1614,9 @@ class CiscoParser():
     def __init__(self):
         pass
     
-    def parse(self,configFile):
+    def parse(self,configFile,syntax):
         self.configFile = configFile
-        self.parse = CiscoConfParse(configFile,factory=True)
+        self.parse = CiscoConfParse(configFile,factory=True,syntax=syntax)
                     
     def getAllObjs(self):
         return self.getNameObjs() + \
@@ -1657,12 +1667,10 @@ class CiscoParser():
                     if obj.re_search_children(r"^\snat")]    
                     
     def getBasicACLRules(self):
-        return [obj for obj in \
-                self.parse.find_objects(r"^access-list\s\d+\s(permit|deny)")]    
+        return self.parse.find_objects(r"^access-list\s\d+\s(permit|deny)")
     
     def getACLRules(self):
-        return [obj for obj in \
-                self.parse.find_objects(r"^access-list\s\S\sextended")]    
+        return self.parse.find_objects(r"^access-list\s\w+\sextended")
     
     def getIPACLRules(self):
         return self.parse.find_objects(r"^ip\saccess-list")
@@ -1673,6 +1681,7 @@ class Cisco2Checkpoint(CiscoObject):
     importSrc = None        # like configFile 
     configFile = None
     parser = None
+    syntax = None
     policy = None
     installOn = None
     natInstallOn = None
@@ -1722,7 +1731,7 @@ class Cisco2Checkpoint(CiscoObject):
         self.obj_list = []
         self.configFile = configFile
         self.parser = CiscoParser()
-        self.parser.parse(configFile)
+        self.parser.parse(configFile, self.syntax)
         print(MSG_PREFIX+'Importing all objects except groups.')
         self._importCheckpointNetworkObjects(xmlNetworkObjectsFile)
         self._importHosts(self.parser.getHostObjs())
@@ -2185,7 +2194,10 @@ class Cisco2Checkpoint(CiscoObject):
         if debug:
             global C2C_DEBUG
             C2C_DEBUG = True
-        
+    
+    def setSyntax(self, syntax):
+        self.syntax = syntax
+
     def setACLRuleIndex(self, index):
         global ACL_RULE_INDEX
         ACL_RULE_INDEX = index
