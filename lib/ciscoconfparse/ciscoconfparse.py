@@ -23,6 +23,7 @@ from models_cisco import IOSIPACLChildLine   # added by mdube
 
 from models_asa import ASAObjGroupNetwork
 from models_asa import ASAObjGroupService
+from models_asa import ASAObjGroupServiceChild
 from models_asa import ASAHostnameLine
 from models_asa import ASAObjNetwork
 from models_asa import ASAObjService
@@ -2979,7 +2980,7 @@ def ConfigLineFactory(text="", comment_delimiter="!", syntax='ios'):
             IOSIPACLChildLine,IOSCfgLine]  # This is simple
     elif syntax=='asa':
         classes = [ASAName, ASAObjNetwork, ASAObjService, 
-            ASAObjGroupNetwork, ASAObjGroupService, 
+            ASAObjGroupNetwork, ASAObjGroupService, ASAObjGroupServiceChild,
             ASAIntfLine, ASAIntfGlobal, 
             ASAHostnameLine, ASAAclLine, 
             ASACfgLine]

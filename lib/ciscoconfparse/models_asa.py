@@ -551,34 +551,26 @@ class ASAObjGroupNetwork(ASACfgLine):
 ##
 ##-------------  ASA object-group service
 ##
-_RE_PORTOBJ_STR = r"""(?:                            # Non-capturing parentesis
- # service-object udp destination eq dns
- (^\s*service-object\s+(?P<protocol>{0})\s+(?P<src_dst>\S+)\s+(?P<s_port>\S+))
-|(^\s*port-object\s+(?P<operator>eq|range)\s+(?P<p_port>\S.+))
-|(^\s*group-object\s+(?P<groupobject>\S+))
-)                                                   # Close non-capture parens
-""".format('tcp|udp|tcp-udp')
-_RE_PORTOBJECT = re.compile(_RE_PORTOBJ_STR, re.VERBOSE)
+_RE_PORT_GROUP_STR = r"""(?:                    # Non-capturing parenthesis
+ (^object-group\s+service\s+(?P<name>\S+)(?:\s+(?P<proto>\S+))?$)
+)                                                # Close non-capture parens
+"""
+_RE_PORT_GROUP = re.compile(_RE_PORT_GROUP_STR, re.VERBOSE)
 
-class ASAObjGroupService(ASACfgLine):
-
+class ASAObjGroupService(BaseCfgLine):
     def __init__(self, *args, **kwargs):
-        """Accept an ASA line number and initialize family relationship 
-            attributes"""
+        """
+        """
+        """Provide attributes on Cisco ASA Service groups"""
         super(ASAObjGroupService, self).__init__(*args, **kwargs)
-
-        self.protocol_type = self.re_match_typed(r'^object-group\s+service\s+\S+(\s+.+)*$',
-            group=1, default='', result_type=str).strip()
-        self.name = self.re_match_typed(r'^object-group\s+service\s+(\S+)',
-            group=1, default='', result_type=str)
-        ## If *no protocol* is specified in the object-group statement, the 
-        ##   object-group can be used for both source or destination ports 
-        ##   at the same time.  Thus L4Objects_are_directional is True if we
-        ##   do not specify a protocol in the 'object-group service' line
-        if (self.protocol_type==''):
-            self.L4Objects_are_directional = True
+        mm = _RE_PORT_GROUP.search(self.text)
+        if not (mm is None):
+            self._mm_results = mm.groupdict()   # All regex match results
         else:
-            self.L4Objects_are_directional = False
+            raise ValueError("[FATAL] models_cisco cannot parse '{0}'".format(self.text))
+    
+    def __repr__(self):
+        return "<%s # %s '%s'>" % (self.classname, self.linenum, self.name)
 
     @classmethod
     def is_object_for(cls, line="", re=re):
@@ -586,8 +578,211 @@ class ASAObjGroupService(ASACfgLine):
             return True
         return False
 
+    @property
+    def name(self):
+        mm_r = self._mm_results
+        return mm_r['name']
+
+    @property
+    def proto(self):
+        mm_r = self._mm_results
+        return mm_r['proto']
+
+    @property
+    def description(self):
+        retval = self.re_match_iter_typed(r'^\s*description\s+(.+)$',
+            result_type=str, default='')
+        return retval
+# Difference between service-object and port-object
+#
+# object-group service WEB-PORTS tcp        <- proto is here
+#   port-object eq www
+#   port-object eq https
+#
+#  object-group service WEB-PORTS
+#    service-object tcp eq 80               <- proto is here
+#    service-object tcp eq 443              <- proto is here
+#
+_PORT_PROTO = 'tcp|udp|tcp-udp'
+_PORT_SIMPLE_OP = 'eq|neq|lt|gt'
+_PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'\
+                '|discard|domain|echo|exec|finger|tftp|ftp|ftp-data|gopher'\
+                '|h323|hostname|http|https|ident|imap4|irc|kerberos|klogin'\
+                '|kshell|ldap|ldaps|login|lotusnotes|lpd|netbios-ssn|nfs'\
+                '|nntp|ntp|pcanywhere-data|pim-auto-rp|pop2|pop3|pptp|rsh'\
+                '|rtsp|sip|smtp|sqlnet|ssh|sunrpc|tacacs|talk|telnet|uucp'\
+                '|whois|www|netbios-ns|netbios-dgm|netbios-ss|snmptrap|snmp'\
+                '|syslog|isakmp|bootps|bootpc|radius|\d+'
+_RE_PORTOBJ_STR = r"""(?:                            # Non-capturing parentesis
+ # service-object udp destination eq dns
+(^\s*service-object\s+(?P<protocol0>icmp))
+|(^\s*service-object\s+(?P<protocol1>{0})\s+(?:destination)?
+    \s+(?P<dst_port_op1>{1})\s+(?P<dst_port1>{2}))
+|(?:^\s*port-object\s+(?P<dst_port_op2>{1})\s+(?P<dst_port2>{2}))
+|(?:^\s*port-object\s+(?P<dst_port_op3>range)
+    \s+(?P<dst_port_low3>\d+)\s+(?P<dst_port_high3>\d+))
+|(?:^\s*(?:object-group|service-object\sobject)\s+(?P<object_group4>\S+))
+  # example:
+  # service tcp source range 1 65535 destination range 49152 65535
+  # service tcp source eq bgp destination eq 53
+|(^\s*service
+  \s*(?P<protocol5>{0})
+  (?:\s+
+    (?:                         # source port
+      (?:source)?
+      (?:
+        (?P<src_port_op5>{1})
+        \s(?P<src_port5>(?:(?:{2})\s?)+)
+      )
+      |(?:range\s+(?P<src_port_low5>\S+)\s+(?P<src_port_high5>\S+))
+      |(?:object-group\s+(?P<src_service_object5>\S+))
+    )
+  )?
+  (?:\s+
+    (?:                         # destination port
+      (?:destination)?
+      (?:
+        (?P<dst_port_op5>{1})
+        \s(?P<dst_port5>(?:(?:{2})\s?)+)
+      )
+      |(?:range\s+(?P<dst_port_low5>\S+)\s+(?P<dst_port_high5>\S+))
+      |(?:object-group\s+(?P<dst_service_object5>\S+))
+    )
+  )?
+ )
+)                                                   # Close non-capture parens
+""".format(_PORT_PROTO,_PORT_SIMPLE_OP,_PORT_NAMES)
+_RE_PORTOBJECT = re.compile(_RE_PORTOBJ_STR, re.VERBOSE)
+
+class ASAObjGroupServiceChild(ASACfgLine):
+
+    def __init__(self, *args, **kwargs):
+        """Accept an ASA line number and initialize family relationship 
+            attributes"""
+        super(ASAObjGroupServiceChild, self).__init__(*args, **kwargs)
+        mm = _RE_PORTOBJECT.search(self.text)
+        if not (mm is None):
+            self._mm_results = mm.groupdict()   # All regex match results
+        else:
+            raise ValueError("[FATAL] models_cisco cannot parse '{0}'".format(self.text))
+
+        ## If *no protocol* is specified in the object-group statement, the 
+        ##   object-group can be used for both source or destination ports 
+        ##   at the same time.  Thus L4Objects_are_directional is True if we
+        ##   do not specify a protocol in the 'object-group service' line
+        if (self.proto==''):
+            self.L4Objects_are_directional = True
+        else:
+            self.L4Objects_are_directional = False
+
+    @classmethod
+    def is_object_for(cls, line="", re=re):
+        if re.search(r'^\s+(?:service-object|port-object|object-group|service)', line):
+            return True
+        return False
+
     def __repr__(self):
-        return "<ASAObjGroupService {0} protocol: {1}>".format(self.name, self.protocol_type)
+        return "<ASAObjGroupService {0} protocol: {1}>".format(self.name, self.proto)
+
+    @property
+    def name(self):
+        return self.parent.name
+
+    @property
+    def proto(self):
+        """
+        """
+        mm_r = self._mm_results
+        return mm_r['protocol0'] or mm_r['protocol1'] \
+                or mm_r['object_group4'] or mm_r['protocol5']
+
+    @property
+    def proto_method(self):
+        mm_r = self._mm_results
+        if mm_r['protocol1'] or mm_r['protocol2'] or mm_r['protocol3'] \
+           or mm_r['protocol5'] or mm_r['protocol0']:
+            return 'proto'
+        elif mm_r['object_group4']:
+            return 'object-group'
+
+    @property
+    def src_port(self):
+        """
+          (?:\s+
+            (?:                         # source port
+              (?:source)?
+              (?:
+                (?P<src_port_op5>{1})
+                \s(?P<src_port5>(?:(?:{2})\s?)+)
+              )
+              |(?:range\s+(?P<src_port_low5>\S+)\s+(?P<src_port_high5>\S+))
+              |(?:object-group\s+(?P<src_service_object5>\S+))
+            )
+          )?
+        """
+        mm_r = self._mm_results
+        if self.src_port_method == 'range':
+            return mm_r['src_port_low5'] + ' ' + mm_r['src_port_high5']
+        return mm_r['src_port5'] or mm_r['src_service_object5']
+
+    @property
+    def src_port_method(self):
+        mm_r = self._mm_results
+        if mm_r['src_port_op5']:
+            return mm_r['src_port_op5']
+        elif mm_r['src_port_low5'] and mm_r['src_port_high5']:
+            return 'range'
+        elif mm_r['src_service_object5']:
+            return 'object-group'
+
+    @property
+    def dst_port(self):
+        """
+         (^\s*service-object\s+(?P<protocol1>{0})\s+(?P<dst_port_op1>{1})\s+(?P<dst_port1>{2}))
+        |(^\s*port-object\s+(?P<dst_port_op2>{1})\s+(?P<dst_port2>{2}\s+))
+        |(^\s*port-object\s+(?P<dst_port_op3>range)
+            \s+(?P<src_port_low3>\S+)\s+(?P<src_port_high3>\S+))
+        |(^\s*object-group\s+(?P<object_group4>\S+))
+        |(^\s*service
+          \s*(?P<protocol5>{0})
+          ... cut for brevity ...
+          (?:\s+
+            (?:                         # destination port
+              (?:destination)?
+              (?:
+                (?P<dst_port_op5>{1})
+                \s(?P<dst_port5>(?:(?:{2})\s?)+)
+              )
+              |(?:range\s+(?P<dst_port_low5>\S+)\s+(?P<dst_port_high5>\S+))
+              |(?:object-group\s+(?P<dst_service_object5>\S+))
+            )
+          )?
+         )
+        )
+        """
+        mm_r = self._mm_results
+        if mm_r['dst_port_op3']:
+            return mm_r['dst_port_low3'] + ' ' + mm_r['dst_port_high3']
+        elif mm_r['dst_port_op5']:
+            return mm_r['dst_port_low5'] + ' ' + mm_r['dst_port_high5']
+        return mm_r['dst_port1'] or mm_r['dst_port2'] or mm_r['dst_port5'] \
+            or mm_r['dst_service_object4'] or mm_r['dst_service_object5']
+
+    @property
+    def dst_port_method(self):
+        mm_r = self._mm_results
+        if mm_r['dst_port_op1']:
+            return mm_r['dst_port_op1']
+        elif mm_r['dst_port_op2']:
+            return mm_r['dst_port_op2']
+        elif mm_r['dst_port_op5']:
+            return mm_r['dst_port_op5']
+        elif mm_r['dst_port_low3'] and mm_r['dst_port_high3']:
+            return 'range'
+        elif mm_r['dst_port_low5'] and mm_r['dst_port_high5']:
+            return 'range'
+        elif mm_r['dst_service_object4'] or mm_r['dst_service_object5']:
+            return 'object-group'
 
     @property
     def ports(self):
@@ -597,16 +792,15 @@ class ASAObjGroupService(ASACfgLine):
         ##    involves iteration
         #GROUP_OBJ_REGEX = r'^\s*group-object\s+(\S+)'
         for obj in self.children:
-
             ## Parse out 'service-object ...' and 'port-object' lines...
             mm = _RE_PORTOBJECT.search(obj.text)
             if not (mm is None):
                 svc_obj = mm.groupdict()
             else:
-                svc_obj = dict()
+                raise ValueError("[FATAL] models_cisco cannot parse '{0}'".format(self.text))
 
-            if svc_obj.get('protocol', None):
-                protocol = svc_obj.get('protocol')
+            if svc_obj.get('protocol1', None):
+                protocol = svc_obj.get('protocol1')
                 src_dst = svc_obj.get('src_dst', '')
                 port = svc_obj.get('s_port', '')
 
@@ -618,6 +812,27 @@ class ASAObjGroupService(ASACfgLine):
                 else:
                     retval.append(L4Object(protocol=protocol, 
                         port_spec=port, syntax='asa'))
+
+            elif svc_obj.get('protocol4', None):
+                #\s*(?P<src_operator4>{1})
+                #\s+(?P<src_first_port4>\S+)
+                #\s+(?P<src_last_port4>\S+)
+                #\s*(?P<dst_operator4>{1})
+                #\s+(?P<dst_first_port4>\S+)
+                #\s+(?P<dst_last_port4>\S+)
+                protocol = svc_obj.get('protocol4')
+                src_op = svc_obj.get('src_operator4', '')
+                port = svc_obj.get('p_port', '')
+                port_spec="{0} {1} {2} {3}".format(op, port)
+
+                if self.protocol_type=='tcp-udp':
+                    retval.append(L4Object(protocol='tcp', 
+                        port_spec=port_spec, syntax='asa'))
+                    retval.append(L4Object(protocol='udp', 
+                        port_spec=port_spec, syntax='asa'))
+                else:
+                    retval.append(L4Object(protocol=self.protocol_type, 
+                        port_spec=port_spec, syntax='asa'))
 
             elif svc_obj.get('operator', None):
                 op = svc_obj.get('operator', '')
@@ -648,6 +863,13 @@ class ASAObjGroupService(ASACfgLine):
             else:
                 raise NotImplementedError("Cannot parse '{0}'".format(obj.text))
         return retval
+
+    @property
+    def description(self):
+        retval = self.re_match_iter_typed(r'^\s*description\s+(\S.+)$',
+            result_type=str, default='')
+        return retval
+
 
 ##
 ##-------------  ASA Interface Object
@@ -989,8 +1211,7 @@ class ASAAclLine(ASACfgLine):
 
     @classmethod
     def is_object_for(cls, line="", re=re):
-        #if _RE_ACLOBJECT.search(line):
-        if 'access-list ' in line[0:13].lower():
+        if re.search('^access-list', line):
             return True
         return False
 

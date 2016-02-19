@@ -207,6 +207,58 @@ class CiscoGroup(CiscoObject):
         mask_bytes = [str(int(b) ^ 255) for b in mask_bytes]
         return '.'.join(mask_bytes)
         
+    def _getServices(self,parsedObj):
+        proto = self._convertProto(parsedObj.proto)
+        proto_m = parsedObj.proto_method
+        port = parsedObj.dst_port
+        port_m = parsedObj.dst_port_method
+        #print("%s %s %s %s" % (proto,proto_m,port,port_m))
+        if proto_m == 'proto':
+            if port_m == 'eq':
+                portList = port.split(' ')
+                ret = []
+                for p in portList:
+                    ret.append(self._getOrCreateMemberObj(port_m,proto,p))
+                return ret
+            elif port_m in ['neq','lt','gt']:
+                raise C2CException('Port method "%s" not implemented yet.' % \
+                                  port_m)
+            elif port_m == 'range':
+                first,last = port.split(' ',1)
+                return [self._getOrCreateMemberObj(port_m,proto,first,last)]
+            elif port_m == 'object-group' or port_m == 'object':
+                return [self._getOrCreateMemberObj('port-group',port)]
+            elif port_m == None:        # this means any
+                return [self._getAnyPort(proto)]
+        elif proto_m == 'object-group':
+            obj = self._getMemberObj('port-group',proto)
+            if obj:
+                return [obj]
+            else:
+                #raise C2CException('Proto method "%s" not implemented yet.' % \
+                #                  proto_m)
+                raise C2CException('Proto "%s" is not defined.' % \
+                                  proto)
+        elif parsedObj.parent.type == 'standard':   # standard = any
+            return [self._getAnyPort('ip')]
+        elif proto_m == 'remark':
+            return None
+        else:
+            print("%s" % (parsedObj.text))
+            print("%s %s %s %s" % (proto,proto_m,port,port_m))
+            raise C2CException("Unrecognized proto/port")
+        
+    def _getAnyPort(self, proto):
+        if proto in ['ip','tcp','udp']:
+            type = 'port'
+        elif proto in ['icmp','ospf','esp','ah','ahp','vrrp','skip','gre']:
+            type = proto
+        else:
+            raise C2CException('Cannot find the "any" service for protocol "%s"' %proto)
+            
+        obj = self._getOrCreateMemberObj(type,'any')
+        return obj
+                    
     def _getMemberObj(self, type, v1, v2=None, v3=None):
         if type == 'host' and v1 == 'any':
             name = v1
@@ -264,7 +316,8 @@ class CiscoGroup(CiscoObject):
             name = v1
             obj_list = self.c2c.findServiceByName(name)
         elif type == 'eq':        # port-object eq X
-            name,proto,port = v1+'/'+v2,v1,v2
+            name = "%s/%s" % (v1,v2[0])
+            proto,port = v1,v2[0]
             port = self._convertPort(port)
             if proto in ['tcp','udp']:
                 obj_list = self.c2c.findServiceByNum(proto,port)
@@ -278,7 +331,8 @@ class CiscoGroup(CiscoObject):
                 else:
                     return None                    
         elif type == 'range':        # port-object range X Y
-            name,proto,first,last = v1+'/'+v2+'-'+v3,v1,v2,v3
+            name = "%s/%s-%s" % (v1,v2[0],v2[-1])
+            proto,first,last = v1,v2[0],v2[-1]
             if proto in ['tcp','udp']:
                 obj_list = self.c2c.findServiceByRange(proto,first,last)
             elif proto == 'tcp-udp':
@@ -378,7 +432,7 @@ class CiscoGroup(CiscoObject):
         elif type == 'port-group':
             raise C2CException('Cannot create a port group member "%s" on the fly.' % v1)
         elif type == 'eq':        # port-object eq X
-            proto,port = v1,v2
+            proto,port = v1,v2[0]
             port = self._convertPort(port)
             if proto in ['tcp','udp']:
                 newObj = CiscoSinglePort(self, None, None, proto, port)
@@ -386,7 +440,8 @@ class CiscoGroup(CiscoObject):
                 self.c2c.singlePortCrCt += 1
                 self.members.append(newObj)
             elif proto == 'tcp-udp':
-                name,proto,port = v1+'/'+v2,v1,v2
+                name = "%s/%s" % (v1,v2[0])
+                proto,port = v1,v2[0]
                 obj_list1 = self.c2c.findServiceByNum('tcp',port)        # Redo the parsing because
                 obj_list2 = self.c2c.findServiceByNum('udp',port)        # one of these could exist.
                 ret1 = self._parseResult(obj_list1, name, 'tcp')
@@ -404,7 +459,7 @@ class CiscoGroup(CiscoObject):
                     self.members.append(newObj2)
 
         elif type == 'range':        # port-object range X Y
-            proto,first,last = v1,v2,v3
+            proto,first,last = v1,v2[0],v2[-1]
             if proto in ['tcp','udp']:            
                 newObj = CiscoPortRange(self, None, None, proto, first, last)
                 self.c2c.addObj(newObj)
@@ -900,164 +955,217 @@ modify network_objects {0} color "{2}"
     def toDBEditElement(self, groupName):
         return "addelement network_objects {0} '' network_objects:{1}\n".format(groupName, self.name)
 
+class CiscoProtoGroup(CiscoGroup):
+    """A cisco proto group"""
+    
+    def __init__(self, c2c, parsedObj):
+        name = parsedObj.name
+        CiscoGroup.__init__(self, c2c, parsedObj, name)
+        self.dbClass = 'service_group'
+                
+        child = self._parseChildren(parsedObj)
+        if child.has_key('protocol-object'):
+            if ('tcp' in child['protocol-object'] and 'udp' in child['protocol-object']) \
+              or 'ip' in child['protocol-object']:
+                obj = self._getMemberObj('port','any')
+                if obj:
+                    if isarray(obj):
+                        for o in obj:
+                            self.members.append(o)
+                    else:
+                        self.members.append(obj)
+                else:
+                    self._createMemberObj('port','any')
+                    obj = self._getMemberObj('port','any')
+                obj.addAlias(name)
+
+        if child.has_key('description'):
+            self.desc = child['description'][0]
+        
+        
+    def toString(self, indent='', verify=False):
+        ret = indent+self.getClass()+"(name=%s,desc=%s,nbMembers=%i)\n" % (self.name,self.getDesc(),len(self.members))
+        for member in self.members:
+            ret += indent+' '+member.toString(indent)
+        if verify and self.getVerify():
+            ret += indent+self.getVerify()
+        return ret
+
+    def toDBEdit(self):
+        ret = ''
+        # Write header
+        ret += '''# Creating new port group: {0}
+create service_group {0}
+modify services {0} comments "{1}"
+ '''.format(self.name, self.getDesc())
+        # Write all members
+        for mem in self.members:
+            ret += mem.toDBEditElement(self.name)
+        # Write footer
+        ret += '''update services {0}
+ '''.format(self.name)
+        return ret
+    
+    def toDBEditElement(self, groupName):
+        return "addelement services {0} '' services:{1}\n".format(groupName, self.name)
+    
 class CiscoPortGroup(CiscoGroup):
     """A cisco service"""
     
     def __init__(self, c2c, parsedObj):
-        a = parsedObj.text.split(' ', 3)
-        grpType = a[1]
-        name = a[2]
-        CiscoGroup.__init__(self, c2c, parsedObj.text, name)
+        #a = parsedObj.text.split(' ', 3)
+        name = parsedObj.name
+        proto = parsedObj.proto
+        desc = parsedObj.description
+        CiscoGroup.__init__(self, c2c, parsedObj, name)
         self.dbClass = 'service_group'
-                
-        if grpType == 'protocol':
-            child = self._parseChildren(parsedObj)
-            if child.has_key('protocol-object'):
-                if ('tcp' in child['protocol-object'] and 'udp' in child['protocol-object']) \
-                  or 'ip' in child['protocol-object']:
-                    obj = self._getMemberObj('port','any')
-                    if obj:
-                        if isarray(obj):
-                            for o in obj:
-                                self.members.append(o)
-                        else:
-                            self.members.append(obj)
-                    else:
-                        self._createMemberObj('port','any')
-                        obj = self._getMemberObj('port','any')
-                    obj.addAlias(name)
-        else:
-            child = self._parseChildren(parsedObj)
-            # For all portObj objects
-            if child.has_key('port-object'):
-                # if port-object, group object-group should contain a protocol
-                proto = a[3]
-                for portObj in child['port-object']:
-                    # Possible values of port-object:
-                    # port-object range 8194 8198
-                    # port-object eq 4321
-                    # port-object eq whois
-                    portCmp,port = portObj.split(' ',1)
-                    port = self._convertPort(port)
-                    if ' ' in port:        # After conversion, the port could be a range (ex: sip)
-                        portCmp = 'range'
-                        
-                    if portCmp == 'eq':
-                        obj = self._getMemberObj(portCmp,proto,port)
-                    elif portCmp == 'range':
-                        first,last = port.split(' ',1)
-                        obj = self._getMemberObj(portCmp,proto,first,last)
-                    else:
-                        raise C2CException('This identifier is not supported: %s' % portCmp)
-                        
-                    if obj:
-                        self.addMember(obj)
-                    else:
-                        if portCmp == 'eq':
-                            self._createMemberObj(portCmp,proto,port)
-                        elif portCmp == 'range':
-                            self._createMemberObj(portCmp,proto,first,last)
-                        else:
-                            raise C2CException('This identifier is not supported: %s' % portCmp)
-                            
-            if child.has_key('service-object'):
-                for portObj in child['service-object']:
-                    # Possible values of service-object:
-                    # service-object tcp destination range 19305 19309 
-                    # service-object udp destination eq 123
-                    # service-object udp destination eq whois
-                    # service-object icmp|ip|tcp|udp
-                    # service-object object TCP_4443
-                    portObj = portObj.rstrip()
-                    if portObj == 'icmp':         # This means all icmp. 
-                        portCmp = 'icmp'
-                        obj = self._getMemberObj(portCmp,'any')
-                    elif portObj == 'ip':
-                        portCmp = 'ip'
-                        obj = self._getMemberObj('port','any')
-                    elif portObj == 'tcp':
-                        portCmp = 'tcp'
-                        obj = self._getMemberObj('port','any')
-                    elif portObj == 'udp': 
-                        portCmp = 'udp'
-                        obj = self._getMemberObj('port','any')
-                    elif portObj == 'esp':         # This means all esp (IPSec phase1). 
-                        portCmp = 'esp'
-                        obj = self._getMemberObj(portCmp,'any')
-                    elif portObj == 'ah':         # This means all ah (IPSec phase2). 
-                        portCmp = 'ah'
-                        obj = self._getMemberObj(portCmp,'any')
-                    elif portObj == 'object':         # This means a previously defined port (Range or Single)
-                        portCmp = 'port-object'
-                        obj = self._getMemberObj(portCmp,None)
-                    else:
-                        try:
-                            proto,direction,portCmp,port = portObj.split(' ',3)
-                            port = self._convertPort(port)
-                            if ' ' in port and port[-1:] != ' ':        # After conversion, the port could be a range (ex: sip)
-                                portCmp = 'range'
-                        except ValueError:
-                            object,name = portObj.split(' ',1)
-                            portCmp = 'port-object'
-                            
-                        if portCmp == 'eq':
-                            obj = self._getMemberObj(portCmp,proto,port)
-                        elif portCmp == 'range':
-                            first,last = port.split(' ',1)
-                            obj = self._getMemberObj(portCmp,proto,first,last)
-                        elif portCmp == 'port-object':
-                            obj = self._getMemberObj(portCmp,name)
-                        else:
-                            raise C2CException('This identifier is not supported: %s' % portCmp)
-                            
-                    if obj:
-                        self.addMember(obj)
-                    else:
-                        if portCmp == 'eq':
-                            self._createMemberObj(portCmp,proto,port)
-                        elif portCmp == 'range':
-                            self._createMemberObj(portCmp,proto,first,last)
-                        elif portCmp == 'icmp':
-                            self._createMemberObj(portCmp,'any')
-                        elif portCmp == 'ip':
-                            self._createMemberObj('port','any')
-                        elif portCmp == 'tcp':
-                            self._createMemberObj('port','any')
-                        elif portCmp == 'udp':
-                            self._createMemberObj('port','any')                            
-                        elif portCmp == 'esp':
-                            self._createMemberObj(portCmp,'any')
-                        elif portCmp == 'ah':
-                            self._createMemberObj(portCmp,'any')
-                        else:
-                            raise C2CException('This identifier is not supported: %s' % portCmp)
-                            
-            if child.has_key('group-object'):
-                for portObj in child['group-object']:
-                    # Possible values of group-object:
-                    # group-object RPC_High_ports_TCP
-                    obj = self._getMemberObj('port-group',portObj)
-                    if obj:
-                        self.addMember(obj)
-                    else:
-                        self._createMemberObj('port-group',portObj)
-            
-            if child.has_key('icmp-object'):
-                proto = 'icmp'
-                for icmpObj in child['icmp-object']:
-                    # icmp-object echo-reply
-                    # icmp-object time-exceeded
-                    # icmp-object unreachable
-                    # icmp-object echo
-                    obj = self._getMemberObj(proto,icmpObj)
-                    if obj:
-                        self.addMember(obj)
-                    else:
-                        self._createMemberObj(proto,icmpObj)                    
-                    
-        if child.has_key('description'):
-            self.desc = child['description'][0]
+
+        pprint("%s %s %s" % (name,proto,desc))
+        for portObj in parsedObj.children:
+            if portObj.__class__.__name__ == 'ASAObjGroupServiceChild':
+                if proto is None:
+                    pprint("Setting service proto")
+                    proto = portObj.proto
+                obj = self._getOrCreateMemberObj(portObj.dst_port_method,proto,portObj.dst_port)
+                self.addMember(obj)
+                try:
+                    pprint("  %s %s" % (portObj.dst_port_method,portObj.dst_port))
+                except Exception as e:
+                    print(e)
+        #exit(1)
+        #for portObj in parsedObj.ports:
+        #    specs = portObj.port_spec.split(' ')
+        #    type = specs[0]         # eq, range, etc.
+#
+#            # Even if this list should contain only one result,
+#            # we'll loop to be sure...
+#            pprint("%s %s %s" % (type,proto,\
+#                    ','.join([str(x) for x in portObj.port_list])))
+#            obj = self._getOrCreateMemberObj(type,proto,portObj.port_list)
+#            self.addMember(obj)
+
+        self.description = parsedObj.description
         
+#        # For all portObj objects
+#        if child.has_key('port-object'):
+#            # if port-object, group object-group should contain a protocol
+#                # Possible values of port-object:
+#                # port-object range 8194 8198
+#                # port-object eq 4321
+#                # port-object eq whois
+#                portCmp,port = portObj.split(' ',1)
+#                port = self._convertPort(port)
+#                if ' ' in port:        # After conversion, the port could be a range (ex: sip)
+#                    portCmp = 'range'
+#                    
+#                if portCmp == 'eq':
+#                    obj = self._getOrCreateMemberObj(portCmp,proto,port)
+#                elif portCmp == 'range':
+#                    first,last = port.split(' ',1)
+#                    obj = self._getOrCreateMemberObj(portCmp,proto,first,last)
+#                else:
+#                    raise C2CException('This identifier is not supported: %s' % portCmp)
+#                    
+#                self.addMember(obj)
+#                        
+#        if child.has_key('service-object'):
+#            for portObj in child['service-object']:
+#                # Possible values of service-object:
+#                # service-object tcp destination range 19305 19309 
+#                # service-object udp destination eq 123
+#                # service-object udp destination eq whois
+#                # service-object icmp|ip|tcp|udp
+#                # service-object object TCP_4443
+#                portObj = portObj.rstrip()
+#                if portObj == 'icmp':         # This means all icmp. 
+#                    portCmp = 'icmp'
+#                    obj = self._getMemberObj(portCmp,'any')
+#                elif portObj == 'ip':
+#                    portCmp = 'ip'
+#                    obj = self._getMemberObj('port','any')
+#                elif portObj == 'tcp':
+#                    portCmp = 'tcp'
+#                    obj = self._getMemberObj('port','any')
+#                elif portObj == 'udp': 
+#                    portCmp = 'udp'
+#                    obj = self._getMemberObj('port','any')
+#                elif portObj == 'esp':         # This means all esp (IPSec phase1). 
+#                    portCmp = 'esp'
+#                    obj = self._getMemberObj(portCmp,'any')
+#                elif portObj == 'ah':         # This means all ah (IPSec phase2). 
+#                    portCmp = 'ah'
+#                    obj = self._getMemberObj(portCmp,'any')
+#                elif portObj == 'object':         # This means a previously defined port (Range or Single)
+#                    portCmp = 'port-object'
+#                    obj = self._getMemberObj(portCmp,None)
+#                else:
+#                    try:
+#                        proto,direction,portCmp,port = portObj.split(' ',3)
+#                        port = self._convertPort(port)
+#                        if ' ' in port and port[-1:] != ' ':        # After conversion, the port could be a range (ex: sip)
+#                            portCmp = 'range'
+#                    except ValueError:
+#                        object,name = portObj.split(' ',1)
+#                        portCmp = 'port-object'
+#                        
+#                    if portCmp == 'eq':
+#                        obj = self._getMemberObj(portCmp,proto,port)
+#                    elif portCmp == 'range':
+#                        first,last = port.split(' ',1)
+#                        obj = self._getMemberObj(portCmp,proto,first,last)
+#                    elif portCmp == 'port-object':
+#                        obj = self._getMemberObj(portCmp,name)
+#                    else:
+#                        raise C2CException('This identifier is not supported: %s' % portCmp)
+#                        
+#                if obj:
+#                    self.addMember(obj)
+#                else:
+#                    if portCmp == 'eq':
+#                        self._createMemberObj(portCmp,proto,port)
+#                    elif portCmp == 'range':
+#                        self._createMemberObj(portCmp,proto,first,last)
+#                    elif portCmp == 'icmp':
+#                        self._createMemberObj(portCmp,'any')
+#                    elif portCmp == 'ip':
+#                        self._createMemberObj('port','any')
+#                    elif portCmp == 'tcp':
+#                        self._createMemberObj('port','any')
+#                    elif portCmp == 'udp':
+#                        self._createMemberObj('port','any')                            
+#                    elif portCmp == 'esp':
+#                        self._createMemberObj(portCmp,'any')
+#                    elif portCmp == 'ah':
+#                        self._createMemberObj(portCmp,'any')
+#                    else:
+#                        raise C2CException('This identifier is not supported: %s' % portCmp)
+#                        
+#        if child.has_key('group-object'):
+#            for portObj in child['group-object']:
+#                # Possible values of group-object:
+#                # group-object RPC_High_ports_TCP
+#                obj = self._getOrCreateMemberObj('port-group',portObj)
+#                self.addMember(obj)
+#                #obj = self._getMemberObj('port-group',portObj)
+#                #if obj:
+#                #    self.addMember(obj)
+#                #else:
+#                #    self._createMemberObj('port-group',portObj)
+#        
+#        if child.has_key('icmp-object'):
+#            for icmpObj in child['icmp-object']:
+#                # icmp-object echo-reply
+#                # icmp-object time-exceeded
+#                # icmp-object unreachable
+#                # icmp-object echo
+#                obj = self._getOrCreateMemberObj('icmp',icmpObj)
+#                self.addMember(obj)
+#                #obj = self._getMemberObj(proto,icmpObj)
+#                #if obj:
+#                #    self.addMember(obj)
+#                #else:
+#                #    self._createMemberObj(proto,icmpObj)                    
+#                    
     def toString(self, indent='', verify=False):
         ret = indent+self.getClass()+"(name=%s,desc=%s,nbMembers=%i)\n" % (self.name,self.getDesc(),len(self.members))
         for member in self.members:
@@ -1351,58 +1459,6 @@ class CiscoACLRule(CiscoGroup):
     def _getAnyAddr(self):
         return self._getOrCreateMemberObj('host','any')
             
-    def _getServices(self,parsedObj):
-        proto = self._convertProto(parsedObj.proto)
-        proto_m = parsedObj.proto_method
-        port = parsedObj.dst_port
-        port_m = parsedObj.dst_port_method
-        #print("%s %s %s %s" % (proto,proto_m,port,port_m))
-        if proto_m == 'proto':
-            if port_m == 'eq':
-                portList = port.split(' ')
-                ret = []
-                for p in portList:
-                    ret.append(self._getOrCreateMemberObj(port_m,proto,p))
-                return ret
-            elif port_m in ['neq','lt','gt']:
-                raise C2CException('Port method "%s" not implemented yet.' % \
-                                  port_m)
-            elif port_m == 'range':
-                first,last = port.split(' ',1)
-                return [self._getOrCreateMemberObj(port_m,proto,first,last)]
-            elif port_m == 'object-group' or port_m == 'object':
-                return [self._getOrCreateMemberObj('port-group',port)]
-            elif port_m == None:        # this means any
-                return [self._getAnyPort(proto)]
-        elif proto_m == 'object-group':
-            obj = self._getMemberObj('port-group',proto)
-            if obj:
-                return [obj]
-            else:
-                #raise C2CException('Proto method "%s" not implemented yet.' % \
-                #                  proto_m)
-                raise C2CException('Proto "%s" is not defined.' % \
-                                  proto)
-        elif parsedObj.parent.type == 'standard':   # standard = any
-            return [self._getAnyPort('ip')]
-        elif proto_m == 'remark':
-            return None
-        else:
-            print("%s" % (parsedObj.text))
-            print("%s %s %s %s" % (proto,proto_m,port,port_m))
-            raise C2CException("Unrecognized proto/port")
-        
-    def _getAnyPort(self, proto):
-        if proto in ['ip','tcp','udp']:
-            type = 'port'
-        elif proto in ['icmp','ospf','esp','ah','ahp','vrrp','skip','gre']:
-            type = proto
-        else:
-            raise C2CException('Cannot find the "any" service for protocol "%s"' %proto)
-            
-        obj = self._getOrCreateMemberObj(type,'any')
-        return obj
-                    
     def _getTime(self, parsedObj):
         return None
         
@@ -1823,7 +1879,7 @@ class Cisco2Checkpoint(CiscoObject):
     def _importProtoGroups(self, groups):
         print(MSG_PREFIX+'Importing all protocol groups.')
         for newGrp in groups:        
-            obj = CiscoPortGroup(self, newGrp)
+            obj = CiscoProtoGroup(self, newGrp)
             if 'any' in [member.name for member in obj.members]:
                 self.addObj(member)
                 self.portGrCt += 1

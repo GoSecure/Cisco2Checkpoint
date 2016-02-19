@@ -534,7 +534,10 @@ class L4Object(object):
     """Object for Transport-layer protocols; the object ensures that logical operators (such as le, gt, eq, and ne) are parsed correctly, as well as mapping service names to port numbers"""
     def __init__(self, protocol='', port_spec='', syntax=''):
         self.protocol = protocol
+        self.operator = ''
+        self.port_spec = port_spec
         self.port_list = list()
+        self.src_port_list = list()
         self.syntax = syntax
 
         try:
@@ -554,24 +557,30 @@ class L4Object(object):
 
         if 'eq ' in port_spec:
             port_str = re.split('\s+', port_spec)[-1]
+            self.operator = 'eq'
             self.port_list = [int(ports.get(port_str, port_str))]
         elif re.search(r'^\S+$', port_spec):
             # Technically, 'eq ' is optional...
+            self.operator = 'eq'
             self.port_list = [int(ports.get(port_spec, port_spec))]
         elif 'range ' in port_spec:
             port_tmp = re.split('\s+', port_spec)[1:]
+            self.operator = 'range'
             self.port_list = range(int(ports.get(port_tmp[0], port_tmp[0])), 
                 int(ports.get(port_tmp[1], port_tmp[1])) + 1)
         elif 'lt ' in port_spec:
             port_str = re.split('\s+', port_spec)[-1]
+            self.operator = 'lt'
             self.port_list = range(1, int(ports.get(port_str, port_str)))
         elif 'gt ' in port_spec:
             port_str = re.split('\s+', port_spec)[-1]
+            self.operator = 'gt'
             self.port_list = range(int(ports.get(port_str, port_str)) + 1, 65535)
         elif 'neq ' in port_spec:
             port_str = re.split('\s+', port_spec)[-1]
             tmp = set(range(1, 65535))
             tmp.remove(int(port_str))
+            self.operator = 'neq'
             self.port_list = sorted(tmp)
 
     def __eq__(self, val):
