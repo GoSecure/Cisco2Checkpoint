@@ -23,7 +23,7 @@ from models_cisco import IOSIPACLChildLine   # added by mdube
 
 from models_asa import ASAObjGroupNetwork
 from models_asa import ASAObjGroupService
-from models_asa import ASAObjGroupServiceChild
+from models_asa import ASAObjGroupProtocol      # added by mdube
 from models_asa import ASAHostnameLine
 from models_asa import ASAObjNetwork
 from models_asa import ASAObjService
@@ -2606,6 +2606,8 @@ class ASAConfigList(MutableSequence):
         ###
         ### Internal structures
         self._RE_NAMES = re.compile(r'^\s*name\s+(\d+\.\d+\.\d+\.\d+)\s+(\S+)')
+        self._RE_NETS  = re.compile(r'^\s*object\s+network\s+(\S+)')
+        self._RE_SVCS  = re.compile(r'^\s*object\s+service\s+(\S+)')
         self._RE_OBJNET = re.compile(r'^\s*object-group\s+network\s+(\S+)')
         self._RE_OBJSVC = re.compile(r'^\s*object-group\s+service\s+(\S+)')
         self._RE_OBJACL = re.compile(r'^\s*access-list\s+(\S+)')
@@ -2896,10 +2898,30 @@ class ASAConfigList(MutableSequence):
         return retval
 
     @property
+    def object_service(self):
+        """Return a dictionary of name to object network mappings"""
+        retval = dict()
+        obj_rgx = self._RE_SVCS
+        for obj in self.CiscoConfParse.find_objects(obj_rgx):
+            name = obj.re_match_typed(obj_rgx, group=1, result_type=str)
+            retval[name] = obj
+        return retval
+
+    @property
     def object_group_network(self):
         """Return a dictionary of name to object-group network mappings"""
         retval = dict()
         obj_rgx = self._RE_OBJNET
+        for obj in self.CiscoConfParse.find_objects(obj_rgx):
+            name = obj.re_match_typed(obj_rgx, group=1, result_type=str)
+            retval[name] = obj
+        return retval
+
+    @property
+    def object_group_service(self):
+        """Return a dictionary of name to object-group service mappings"""
+        retval = dict()
+        obj_rgx = self._RE_OBJSVC
         for obj in self.CiscoConfParse.find_objects(obj_rgx):
             name = obj.re_match_typed(obj_rgx, group=1, result_type=str)
             retval[name] = obj
@@ -2980,7 +3002,8 @@ def ConfigLineFactory(text="", comment_delimiter="!", syntax='ios'):
             IOSIPACLChildLine,IOSCfgLine]  # This is simple
     elif syntax=='asa':
         classes = [ASAName, ASAObjNetwork, ASAObjService, 
-            ASAObjGroupNetwork, ASAObjGroupService, ASAObjGroupServiceChild,
+            ASAObjGroupNetwork, ASAObjGroupService, 
+            ASAObjGroupProtocol,
             ASAIntfLine, ASAIntfGlobal, 
             ASAHostnameLine, ASAAclLine, 
             ASACfgLine]
