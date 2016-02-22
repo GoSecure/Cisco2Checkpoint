@@ -13,6 +13,12 @@ TODO
  - check group merge with -01
  - Distinct IOS vs ASA
  - Add a "--no-any-any" feature to avoid import of any/any rules
+ - Look for examples with client DATA
+ - run pep8
+ - add counters to c2c.addObj() to automatically increase counters
+ - remove unused variables
+ - find good way to increment version
+ - review function's documentation and comments
 
 v0.18 - 2016-01-13
 Features:

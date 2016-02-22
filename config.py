@@ -47,13 +47,13 @@ ACL_RULE_INDEX = -1
 
 HOST_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost']
 NETOBJ_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange']
-SVCOBJ_CLASSES = ['CiscoSinglePort','CiscoPortRange','CiscoPortGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
+SVCOBJ_CLASSES = ['CiscoServicePort','CiscoServiceRange','CiscoServiceGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
 ANY_CLASSES = ['CiscoAnyHost', 'CiscoAnyIcmp', 'CiscoAnyPort']
-GROUP_CLASSES = ['CiscoNetGroup', 'CiscoPortGroup']
+GROUP_CLASSES = ['CiscoNetGroup', 'CiscoServiceGroup']
 
 # Classes that have a name (searchable by name)
 NETOBJ_NAMED_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange','CiscoNetGroup']
-SVCOBJ_NAMED_CLASSES = ['CiscoSinglePort','CiscoPortRange','CiscoPortGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
+SVCOBJ_NAMED_CLASSES = ['CiscoServicePort','CiscoServiceRange','CiscoServiceGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
 
 
 EXCLUDE_PORTS = ['ssl_v3', 'ssh_version_2', 'ftp-bidir', 'ftp-pasv', 'ftp-port', \
@@ -70,12 +70,10 @@ ICMP_DIC = { 'unreachable' : 'dest-unreach', \
              'parameter-problem' : 'param-prblm', \
              'mobile-redirect' : 'redirect'}
              
-ILLEGAL_DIC = { '' : '', \
-                # 'All-' : 'All_', \        # Removed for a customer
-                # '-All' : '_All', \        # Removed for a customer
-                'All-Perimeter' : 'All_Perimeter', \
+ILLEGAL_DIC = { 'All-Perimeter' : 'All_Perimeter', \
                 'In-Domain' : 'In_Domain', \
                 'GigabitEthernet' : 'Gi', \
+                'HOST' : 'HST', \
                 '(' : '-', \
                 ')' : '', \
               }    
@@ -95,6 +93,7 @@ PORT_DIC = { 'echo' : '7', \
         'bootps' : '67', \
         'bootpc' : '68', \
         'tftp' : '69', \
+        'http' : '80', \
         'www' : '80', \
         'pop2' : '109', \
         'pop3' : '110', \
@@ -112,6 +111,7 @@ PORT_DIC = { 'echo' : '7', \
         'https' : '443', \
         'isakmp' : '500', \
         'cmd' : '514', \
+        'rsh' : '514', \
         'syslog' : '514', \
         'lpd' : '515', \
         'rtsp' : '554', \
@@ -119,6 +119,7 @@ PORT_DIC = { 'echo' : '7', \
         'sqlnet' : '1521', \
         'h323' : '1720', \
         'pptp' : '1723', \
+        'radius' : '1812', \
         'sip' : '5060 5061', \
         'aol' : '5190', \
         'pcanywhere-data' : '5631', \

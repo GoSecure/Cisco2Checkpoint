@@ -37,7 +37,9 @@ from ccp_util import IPv4Obj
 ##-------------  ASA supported protocols, operators and port names
 ##
 
-_PORT_PROTO = 'tcp|udp|tcp-udp'
+_IP_PROTO = 'tcp|udp|tcp-udp'
+_ALL_PROTOCOLS = 'ip|tcp|udp|icmp|ahp|ah|eigrp|esp|gre|igmp|igrp|ipinip|ipsec'\
+                '|ospf|pcp|pim|pptp|snp|\d+'
 _PORT_SIMPLE_OP = 'eq|neq|lt|gt'
 _PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'\
                 '|discard|domain|echo|exec|finger|tftp|ftp|ftp-data|gopher'\
@@ -47,7 +49,12 @@ _PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'\
                 '|rtsp|sip|smtp|sqlnet|ssh|sunrpc|tacacs|talk|telnet|uucp'\
                 '|whois|www|netbios-ns|netbios-dgm|netbios-ss|snmptrap|snmp'\
                 '|syslog|isakmp|bootps|bootpc|radius|\d+'
-
+_ACL_ICMP_PROTOCOLS = 'alternate-address|conversion-error|echo-reply|echo'\
+                '|information-reply|information-request|mask-reply'\
+                '|mask-request|mobile-redirect|parameter-problem|redirect'\
+                '|router-advertisement|router-solicitation|source-quench'\
+                '|time-exceeded|timestamp-reply|timestamp-request|traceroute'\
+                '|unreachable'
 ##
 ##-------------  ASA Configuration line object
 ##
@@ -530,7 +537,7 @@ _RE_SVCOBJ_CHILD_STR = r"""(?: # Non-capturing parentesis
   )
  )
 )                               # Close non-capture parentesis
-""".format(_PORT_PROTO,_PORT_SIMPLE_OP,_PORT_NAMES)
+""".format(_IP_PROTO,_PORT_SIMPLE_OP,_PORT_NAMES)
 _RE_SVCOBJ_CHILD = re.compile(_RE_SVCOBJ_CHILD_STR, re.VERBOSE)
 class ASAObjService(ASACfgLine):
 
@@ -554,8 +561,7 @@ class ASAObjService(ASACfgLine):
     @property
     def description(self):
         regex = r"(^\s+description(?P<description0>.+)$)"
-        retval = self.re_match_iter_typed(regex,
-            result_type=str, default='')
+        retval = self.re_match_iter_typed(regex, result_type=str, default='')
         return retval
 
     def m_src_port(self,mm_r):
@@ -628,7 +634,7 @@ class ASAObjService(ASACfgLine):
 ##
 _RE_PROTO_GROUP_CHILD_STR = r"""(?:
 (^\s+description(?P<description0>.+)$)
-|(^protocol-object\s+(?P<protocol1>\S+)$)
+|(^\s+protocol-object\s+(?P<protocol1>\S+)$)
 )
 """
 _RE_PROTO_GROUP_CHILD = re.compile(_RE_PROTO_GROUP_CHILD_STR, re.VERBOSE)
@@ -675,12 +681,12 @@ class ASAObjGroupProtocol(BaseCfgLine):
             else:
                 mm_r = dict()
             
-            # protocol...
-            if mm_r.get('protocol1',None):
-                retval.append(mm_r['protocol1'])
             # description
-            elif mm_r.get('description0',None):
-                retval['description'] =  mm_r['description0']
+            if mm_r.get('description0',None):
+                pass
+            # protocol...
+            elif mm_r.get('protocol1',None):
+                retval.append(mm_r['protocol1'])
             else:
                 raise NotImplementedError("Cannot parse '{0}'".format(obj.text))
         return retval
@@ -689,9 +695,14 @@ class ASAObjGroupProtocol(BaseCfgLine):
 ##-------------  ASA object-group network
 ##
 _RE_NETOBJECT_STR = r"""(?:                         # Non-capturing parenthesis
- (^\s*network-object\s+host\s+(?P<host>\S+))
-|(^\s*network-object\s+(?P<network>\S+)\s+(?P<netmask>\d+\.\d+\.\d+\.\d+))
-|(^\s*group-object\s+(?P<groupobject>\S+))
+(^\s+description(?P<description0>.+)$)
+|(^\s+network-object\s+host\s+(?P<host>\S+))
+|(^\s+network-object
+    (?:\s+network)?
+    \s+(?P<network>\d+\.\d+\.\d+\.\d+)
+    \s+(?P<netmask>\d+\.\d+\.\d+\.\d+))
+|(^\s+network-object\s+object\s+(?P<object>\S+))
+|(^\s+group-object\s+(?P<groupobject>\S+))
 )                                                   # Close non-capture parens
 """
 _RE_NETOBJECT = re.compile(_RE_NETOBJECT_STR, re.VERBOSE)
@@ -702,14 +713,24 @@ class ASAObjGroupNetwork(ASACfgLine):
         attributes"""
         super(ASAObjGroupNetwork, self).__init__(*args, **kwargs)
 
-        self.name = self.re_match_typed(r'^object-group\s+network\s+(\S+)', group=1, 
-            result_type=str)
-
     @classmethod
     def is_object_for(cls, line="", re=re):
         if re.search(r'^(?:object-group\snetwork)', line):
             return True
         return False
+
+    @property
+    def name(self):
+        retval = self.re_match_typed(r'^object-group\snetwork\s+(\S.+)$',
+            result_type=str, default='')
+        return retval
+
+    @property
+    def description(self):
+        regex = r"(^\s+description(?P<description0>.+)$)"
+        retval = self.re_match_iter_typed(regex,
+            result_type=str, default='')
+        return retval
 
     @property
     def hash_children(self):
@@ -785,6 +806,62 @@ class ASAObjGroupNetwork(ASACfgLine):
 
         return retval
 
+    def m_network_name_exist(self,name):
+        group_ports = self.confobj.object_group_network.get(name, None) \
+                or self.confobj.object_network.get(name, None)
+                
+        if name==self.name:
+            ## Throw an error when importing self
+            raise ValueError('FATAL: Cannot recurse through group-object {0}'\
+                             ' in object-group or object network {1}'\
+                             .format(name, self.name))
+        if (group_ports is None):
+            return False
+        return True
+
+    @property
+    def result_dict(self):
+        """Return a list of objects which represent 
+        the network group members"""     
+        retval = list()
+        for obj in self.children:
+            mm = _RE_NETOBJECT.search(obj.text)
+            if not (mm is None):
+                mm_r = mm.groupdict()
+            else:
+                raise ValueError("[FATAL] models_asa cannot parse '{0}'"\
+                                 .format(obj.text))
+            
+            net_obj = dict()
+            if mm_r.get('description0',None):
+                net_obj['member_method'] = 'description'
+            elif mm_r.get('host', None):
+                net_obj['ipaddr'] = mm_r['host']
+                net_obj['mask'] = '255.255.255.255'
+                net_obj['member_method'] = 'host'
+            elif mm_r.get('network', None):
+                net_obj['subnet'] = mm_r['network']
+                net_obj['mask'] = mm_r['netmask']
+                net_obj['member_method'] = 'subnet'
+            elif mm_r.get('group-object', None):
+                net_obj['object_name'] = mm_r['groupobject']
+                net_obj['member_method'] = 'group-object'
+                # Make sure the network group was defined before
+                if not self.m_network_name_exist(mm_r['groupobject']):
+                    raise ValueError("FATAL: Cannot find network object named {0}"\
+                                     .format(name))
+            elif mm_r.get('object', None):
+                net_obj['object_name'] = mm_r['object']
+                net_obj['member_method'] = 'object'
+                # Make sure the network object was defined before
+                if not self.m_network_name_exist(mm_r['object']):
+                    raise ValueError("FATAL: Cannot find network object named {0}"\
+                                     .format(name))
+            retval.append(net_obj)
+
+        return retval
+
+
 ##
 ##-------------  ASA object-group service
 ##
@@ -799,20 +876,31 @@ class ASAObjGroupNetwork(ASACfgLine):
 #    service-object tcp eq 443              <- proto is here
 #
 _RE_SVCGROUP_CHILD_STR = r"""(?:                    # Non-capturing parentesis
-# Examples
-# service-object udp destination eq dns
-# service-object tcp eq 80
-# port-object eq https
+# TODO: Add support for source ports in this regex
+# Examples                                  group_suffix
+#   service-object icmp|ip|tcp|udp|..       1
+#   service-object udp destination eq dns   2
+#   service-object tcp eq 80                2
+#   service-object tcp range 5000 5005      3
+#   service-object object TCP_4443          4
+#   port-object eq https                    5
+#   port-object range 1 1024                6
+#   group-object RPC_High_ports_TCP         7
+#   icmp-object echo-reply|time-exceeded|.. 8
 (^\s+description\s+(?P<description0>.*)$)
-|(^\s+service-object\s+(?P<protocol0>icmp))
-|(^\s+service-object\s+(?P<protocol1>{0})(?:\s+destination)?
-    \s+(?P<dst_port_op1>{1})\s+(?P<dst_port1>{2}))
-|(^\s+port-object\s+(?P<dst_port_op2>{1})\s+(?P<dst_port2>{2}))
-|(^\s+port-object\s+(?P<dst_port_op3>range)
-    \s+(?P<dst_port_low3>\d+)\s+(?P<dst_port_high3>\d+))
-|(^\s+service-object\sobject\s+(?P<dst_service_group4>\S+))
+|(^\s+service-object\s+(?P<protocol1>{3})$)
+|(^\s+service-object\s+(?P<protocol2>{0})(?:\s+destination)?
+    \s+(?P<dst_port_op2>{1})\s+(?P<dst_port2>{2}))
+|(^\s+service-object\s+(?P<protocol3>{0})(?:\s+destination)?
+    \s+(?P<dst_port_op3>range)\s+(?P<dst_port_low3>\d+)\s+(?P<dst_port_high3>\d+))
+|(^\s+service-object\sobject\s+(?P<dst_object4>\S+))
+|(^\s+port-object\s+(?P<dst_port_op5>{1})\s+(?P<dst_port5>{2}))
+|(^\s+port-object\s+(?P<dst_port_op6>range)
+    \s+(?P<dst_port_low6>\d+)\s+(?P<dst_port_high6>\d+))
+|(^\s+group-object\s+(?P<dst_group7>\S+))
+|(^\s+icmp-object\s+(?P<dst_icmp_msg8>\S+))
 )                                                   # Close non-capture parens
-""".format(_PORT_PROTO,_PORT_SIMPLE_OP,_PORT_NAMES)
+""".format(_IP_PROTO,_PORT_SIMPLE_OP,_PORT_NAMES,_ALL_PROTOCOLS)
 _RE_SVCGROUP_CHILD = re.compile(_RE_SVCGROUP_CHILD_STR, re.VERBOSE)
 class ASAObjGroupService(BaseCfgLine):
     def __init__(self, *args, **kwargs):
@@ -851,34 +939,48 @@ class ASAObjGroupService(BaseCfgLine):
     def m_proto(self,mm_r):
         """
         """
-        return self.proto or mm_r['protocol0'] or mm_r['protocol1'] \
-                or mm_r['dst_service_group4']
+        return mm_r['protocol1'] or mm_r['protocol2'] or self.proto
 
     def m_proto_method(self,mm_r):
-        if self.proto or mm_r['protocol0'] or mm_r['protocol1']:
-            return 'port-object'
-        elif mm_r['dst_service_group4']:
+        if mm_r['protocol1']:
+            return 'protocol'
+        elif mm_r['protocol2'] or mm_r['protocol3']:
             return 'service-object'
+        elif self.proto:
+            return 'port-object'
+        elif mm_r['dst_object4']:
+            return 'object'
+        elif mm_r['dst_group7']:
+            return 'group'
+        elif mm_r['dst_icmp_msg8']:
+            return 'icmp'
 
     def m_dst_port(self,mm_r):
         if mm_r['dst_port_op3']:
             return mm_r['dst_port_low3'] + ' ' + mm_r['dst_port_high3']
-        return mm_r['dst_port1'] or mm_r['dst_port2'] \
-            or mm_r['dst_service_group4'] 
+        elif mm_r['dst_port_op6']:
+            return mm_r['dst_port_low6'] + ' ' + mm_r['dst_port_high6']
+        return mm_r['dst_port2'] or mm_r['dst_port5'] \
+            or mm_r['dst_object4'] or mm_r['dst_group7'] or mm_r['dst_icmp_msg8']
 
     def m_dst_port_method(self,mm_r):
-        if mm_r['dst_port_op1']:
-            return mm_r['dst_port_op1']
-        elif mm_r['dst_port_op2']:
+        if mm_r['dst_port_op2']:
             return mm_r['dst_port_op2']
-        elif mm_r['dst_port_low3'] and mm_r['dst_port_high3']:
+        elif mm_r['dst_port_op5']:
+            return mm_r['dst_port_op5']
+        elif (mm_r['dst_port_low3'] and mm_r['dst_port_high3'])\
+                or (mm_r['dst_port_low6'] and mm_r['dst_port_high6']):
             return 'range'
-        elif mm_r['dst_service_group4']:
-            return 'object-group'
+        elif mm_r['dst_object4']:
+            return 'object'
+        elif mm_r['dst_group7']:
+            return 'group'
+        elif mm_r['dst_icmp_msg8']:
+            return 'icmp'
 
     def m_dst_port_op(self,mm_r):
-        return mm_r['dst_port_op1'] or mm_r['dst_port_op2'] \
-                or mm_r['dst_port_op3']
+        return mm_r['dst_port_op2'] or mm_r['dst_port_op3'] \
+                or mm_r['dst_port_op5'] or mm_r['dst_port_op6']
 
     def m_service_name_exist(self,name):
         group_ports = self.confobj.object_group_service.get(name, None) \
@@ -893,24 +995,35 @@ class ASAObjGroupService(BaseCfgLine):
 
     @property
     def result_dict(self):
-        """Return a list of objects which represent the protocol and ports allowed by this object-group"""
-
         """
-        # Examples
-        # service-object udp destination eq dns
-        # service-object tcp eq 80
-        # port-object eq https
-        (^\s+service-object\s+(?P<protocol0>icmp))
-        |(^\s+service-object\s+(?P<protocol1>{0})\s+(?:destination)?
-            \s+(?P<dst_port_op1>{1})\s+(?P<dst_port1>{2}))
-        |(^\s+port-object\s+(?P<dst_port_op2>{1})\s+(?P<dst_port2>{2}))
-        |(^\s+port-object\s+(?P<dst_port_op3>range)
-            \s+(?P<dst_port_low3>\d+)\s+(?P<dst_port_high3>\d+))
-        |(^\s+service-object\sobject\s+(?P<dst_service_group4>\S+))
-        """     
+        Return a list of objects which represent the protocol and ports 
+        allowed by this object-group
+
+        # Examples                                  group_suffix
+        #   service-object icmp|ip|tcp|udp|..       1
+        #   service-object udp destination eq dns   2
+        #   service-object tcp eq 80                2
+        #   service-object tcp range 5000 5005      3
+        #   service-object object TCP_4443          4
+        #   port-object eq https                    5
+        #   port-object range 1 1024                6
+        #   group-object RPC_High_ports_TCP         7
+        #   icmp-object echo-reply|time-exceeded|.. 8
+        (^\s+description\s+(?P<description0>.*)$)
+        |(^\s+service-object\s+(?P<protocol1>{3}))
+        |(^\s+service-object\s+(?P<protocol2>{0})(?:\s+destination)?
+            \s+(?P<dst_port_op2>{1})\s+(?P<dst_port2>{2}))
+        |(^\s+service-object\s+(?P<protocol3>{0})(?:\s+destination)?
+            \s+(?P<dst_port_op3>range)\s+(?P<dst_port_low3>\d+)\s+(?P<dst_port_high3>\d+))
+        |(^\s+service-object\sobject\s+(?P<dst_object4>\S+))
+        |(^\s+port-object\s+(?P<dst_port_op5>{1})\s+(?P<dst_port5>{2}))
+        |(^\s+port-object\s+(?P<dst_port_op6>range)
+            \s+(?P<dst_port_low6>\d+)\s+(?P<dst_port_high6>\d+))
+        |(^\s+group-object\s+(?P<dst_group7>\S+))
+        |(^\s+icmp-object\s+(?P<dst_icmp_msg8>\S+))
+        """
         retval = list()
         for obj in self.children:
-            ## Parse out 'service-object ...' and 'port-object' lines...
             mm = _RE_SVCGROUP_CHILD.search(obj.text)
             if not (mm is None):
                 mm_r = mm.groupdict()
@@ -931,7 +1044,7 @@ class ASAObjGroupService(BaseCfgLine):
                 svc['dst_port_high'] = mm_r['dst_port_high3']
         
                 # Make sure the service group was defined before
-                if self.m_dst_port_method(mm_r) == 'object-group':
+                if self.m_dst_port_method(mm_r) in ['object','group']:
                     name = self.m_dst_port(mm_r)
                     if not self.m_service_name_exist(name):
                         raise ValueError("FATAL: Cannot find service object named {0}"\
@@ -1157,7 +1270,7 @@ _ACL_PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'\
                 '|syslog|isakmp|bootps|bootpc|\d+'
 _RE_ACLOBJECT_STR = r"""(?:                         # Non-capturing parenthesis
 # remark
-(^access-list\s+(?P<name0>\S+)\s+(?P<action0>remark)\s+(?P<remark>\S.+?)$)
+(^access-list\s+(?P<name0>\S+)\s+(?P<type0>remark)\s+(?P<remark>.*)$)
 
 # extended service object with source network object, destination network object
 |(?:^access-list\s+(?P<name1>\S+)
@@ -1285,108 +1398,6 @@ class ASAAclLine(ASACfgLine):
             return True
         return False
 
-#    @property
-#    def src_addr_method(self):
-#        mm_r = self._mm_results
-#        if mm_r['action0'] and (mm_r['action0']=='remark'):
-#            # remarks return an empty string
-#            return ''
-#        elif mm_r['src_networkobject1'] or mm_r['src_networkobject2'] or mm_r['src_networkobject4']:
-#            return 'object-group'
-#        elif mm_r['src_object1'] or mm_r['src_object2'] or mm_r['src_object4']:
-#            return 'object'
-#        elif mm_r['src_network1a'] or mm_r['src_network2a'] \
-#            or mm_r['src_network2b'] or mm_r['src_network2c'] \
-#            or mm_r['src_network4a'] or mm_r['src_network4b'] \
-#            or mm_r['src_network4c']:
-#            return 'network'
-#        ## NOTE: I intended to match dst addrs here...
-#        elif mm_r['acl_name3']:
-#            ## Special case: standard ACLs match any src implicitly
-#            self._mm_results['src_network3'] = 'any4'
-#            return 'network'
-#        else:
-#            raise ValueError("Cannot parse ACL source address method for '{0}'".format(self.text))
-#
-#    @property
-#    def dst_addr_method(self):
-#        mm_r = self._mm_results
-#        if mm_r['action0'] and (mm_r['action0']=='remark'):
-#            # remarks return an empty string
-#            return ''
-#        elif mm_r['dst_networkobject1'] or mm_r['dst_networkobject2'] or mm_r['dst_networkobject4']:
-#            return 'object-group'
-#        elif mm_r['dst_object1'] or mm_r['dst_object2'] or mm_r['dst_object4']:
-#            return 'object'
-#        elif mm_r['dst_network1a'] or mm_r['dst_network2a'] \
-#            or mm_r['dst_network2b'] or mm_r['dst_network2c'] \
-#            or mm_r['dst_network4a'] or mm_r['dst_network4b'] \
-#            or mm_r['dst_network4c']:
-#            return 'network'
-#        elif mm_r['dst_network3a'] or mm_r['dst_network3b'] \
-#            or mm_r['dst_network3c']:
-#            return 'network'
-#        else:
-#            raise ValueError("Cannot parse ACL destination address method for '{0}'".format(self.text))
-#
-#    @property
-#    def acl_protocol_dict(self):
-#        mm_r = self._mm_results
-#        retval = dict()
-#
-#        if mm_r['remark']:
-#            # remarks get IP protocol -1
-#            retval['protocol'] = -1
-#            retval['protocol_object'] = ''
-#            return retval
-#        elif mm_r['protocol1'] or mm_r['protocol2'] or mm_r['protocol4']:
-#            _proto = mm_r['protocol1'] or mm_r['protocol2'] or mm_r['protocol4'] or -1
-#            retval['protocol'] = int(ASA_IP_PROTOCOLS.get(_proto, _proto))
-#            retval['protocol_object'] = ''
-#            return retval
-#        elif mm_r['acl_name3']:
-#            # Special case for standard ASA ACLs
-#            _proto = 'ip'
-#            retval['protocol'] = int(ASA_IP_PROTOCOLS.get(_proto, _proto))
-#            retval['protocol_object'] = ''
-#            return retval
-#        elif mm_r['service_object1'] or mm_r['service_object2']:
-#            # protocol service objects get a special protocol number
-#            retval['protocol'] = 65535
-#            retval['protocol_object'] = mm_r['service_object1'] \
-#                or mm_r['service_object2']
-#            return retval
-#        else:
-#            raise ValueError("Cannot parse ACL protocol value for '{0}'".format(self.text))
-#
-#    @property
-#    def result_dict(self):
-#        mm_r = self._mm_results
-#        retval = dict()
-#
-#        proto_dict = self.acl_protocol_dict
-#        retval['ip_protocol'] = proto_dict['protocol']
-#        retval['ip_protocol_object'] = proto_dict['protocol_object']
-#        retval['acl_name'] = mm_r['acl_name0'] or mm_r['acl_name1'] \
-#            or mm_r['acl_name2'] or mm_r['acl_name3'] or mm_r['acl_name4']
-#        retval['action'] = mm_r['action0'] or mm_r['action1'] \
-#            or mm_r['action2'] or mm_r['action3'] or mm_r['action4']
-#        retval['remark'] = mm_r['remark']
-#        retval['src_addr_method'] = self.src_addr_method
-#        retval['dst_addr_method'] = self.dst_addr_method
-#        retval['disable'] = bool(mm_r['disable1'] or mm_r['disable2'] or mm_r['disable4'])
-#        retval['time_range'] = mm_r['time_range1'] or mm_r['time_range2'] or mm_r['time_range4']
-#        retval['log'] = bool(mm_r['log1'] or mm_r['log2'] or mm_r['log4'])
-#        if not retval['log']:
-#            retval['log_interval'] = -1
-#            retval['log_level'] = ''
-#        else:
-#            retval['log_level'] = mm_r['loglevel1'] or mm_r['loglevel2'] or mm_r['loglevel4'] or 'informational'
-#            retval['log_interval'] = int(mm_r['log_interval1'] \
-#                or mm_r['log_interval2'] or mm_r['log_interval4'] or 300)
-#
-#        return retval
-#
     @property
     def name(self):
         mm_r = self._mm_results
@@ -1396,13 +1407,12 @@ class ASAAclLine(ASACfgLine):
     @property
     def type(self):
         mm_r = self._mm_results
-        return mm_r['type1'] or mm_r['type2'] or mm_r['type3']
+        return mm_r['type0'] or mm_r['type1'] or mm_r['type2'] or mm_r['type3']
 
     @property
     def action(self):
         mm_r = self._mm_results
-        return mm_r['action0'] or mm_r['action1'] or mm_r['action2'] \
-                or mm_r['action3']
+        return mm_r['action1'] or mm_r['action2'] or mm_r['action3']
 
     @property
     def remark(self):

@@ -2898,6 +2898,16 @@ class ASAConfigList(MutableSequence):
         return retval
 
     @property
+    def object_network(self):
+        """Return a dictionary of name to object network mappings"""
+        retval = dict()
+        obj_rgx = self._RE_NETS
+        for obj in self.CiscoConfParse.find_objects(obj_rgx):
+            name = obj.re_match_typed(obj_rgx, group=1, result_type=str)
+            retval[name] = obj
+        return retval
+
+    @property
     def object_service(self):
         """Return a dictionary of name to object network mappings"""
         retval = dict()
