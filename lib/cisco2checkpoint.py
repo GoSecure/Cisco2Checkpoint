@@ -6,6 +6,8 @@ import socket
 import os
 import re
 
+ACL_RULE_INDEX = DEFAULT_ACL_RULE_INDEX
+
 def isarray(var):
     return isinstance(var, (list, tuple))
     
@@ -16,16 +18,10 @@ def isipaddress(var):
     except socket.error:
         return False
 
-def mask2cidr_old(netmask):
-    binary_str = ''
-    for octet in netmask.split('.'):
-        binary_str += bin(int(octet))[2:].zfill(8)
-    return str(len(binary_str.rstrip('0')))
-
 def mask2cidr(mask):
     return sum([bin(int(x)).count('1') for x in mask.split('.')])       
 
-def make_flat(l):
+def flatten_array(l):
     res = []
     iters_stack = [iter(l)]
     while iters_stack:
@@ -46,7 +42,9 @@ class C2CException(Exception):
     pass
     
 class CiscoObject():
-    """A name command"""
+    """
+    Abstract class for all Cisco objects
+    """
     name = None
     desc = None
     color = None
@@ -160,7 +158,9 @@ class CiscoObject():
         return ''
         
 class CiscoService(CiscoObject):
-    """A cisco port"""
+    """
+    Abstract class for all services
+    """
     proto = None
     
     def __init__(self, c2c, name, desc, alreadyExist=False):
@@ -189,7 +189,11 @@ class CiscoService(CiscoObject):
     def toDBEditElement(self, groupName):
         return "addelement services {0} '' services:{1}\n".format(groupName, self.name)
 
+
 class CiscoGroup(CiscoObject):                
+    """
+    Abstract class for all groups
+    """
     members = []
     
     def __init__(self, c2c, ciscoLine, name, members=None, desc=None, \
@@ -222,7 +226,7 @@ class CiscoGroup(CiscoObject):
         if type == 'host' and v1 == 'any':
             name = v1
             obj_list = self.c2c.findObjByName(name)
-        elif type in ['port','ip','tcp','udp'] and v1 == 'any':
+        elif type in SUPPORTED_IP_PROTO and v1 == 'any':
             name = v1
             obj_list = self.c2c.findObjByNameType(name,'CiscoAnyPort')
         elif type == 'icmp' or type == 'icmp-object':
@@ -328,7 +332,7 @@ class CiscoGroup(CiscoObject):
         if type == 'host' and v1 == 'any':
             newObj = CiscoAnyHost(self)
             self.c2c.addObj(newObj)
-        elif type == 'port' and v1 == 'any':
+        elif type in SUPPORTED_IP_PROTO and v1 == 'any':
             newObj = CiscoAnyPort(self)
             self.c2c.addObj(newObj)
         elif type == 'ospf' and v1 == 'any':
@@ -920,7 +924,7 @@ class CiscoProtoGroup(CiscoGroup):
         mm_r = parsedObj.result_dict
         if ('tcp' in mm_r and 'udp' in mm_r) \
               or 'ip' in mm_r:
-            obj = self._getOrCreateMemberObj('port','any')
+            obj = self._getOrCreateMemberObj('ip','any')
             obj.addAlias(name)
             self.addMember(obj)
         
@@ -1007,9 +1011,9 @@ class CiscoServiceGroup(CiscoGroup):
         # Possible values of protocol:
         #   service-object icmp|ip|tcp|udp
         elif proto_m == 'protocol':
-            if proto in ['ip','tcp','udp', 'tcp-udp']:
-                return [self._getOrCreateMemberObj('port','any')]
-            elif proto in ['icmp','ospf','esp','ah','ahp','vrrp','skip','gre']:
+            if proto in SUPPORTED_IP_PROTO:
+                return [self._getOrCreateMemberObj('ip','any')]
+            elif proto in SUPPORTED_NO_IP_PROTO:
                 return [self._getOrCreateMemberObj(proto,'any')]
 #        elif proto_m == 'proto-group'
 #            return [self._getOrCreateMemberObj('port-object','any')]
@@ -1149,16 +1153,6 @@ class CiscoACLRule(CiscoGroup):
         if forceLog:
             self.tracks = True
     
-    #ip access-list extended ISO_NE_OUT_(GI0/0.817)
-    # permit tcp any any established
-    # permit icmp host 172.19.33.11 object-group ISO_NET
-    # deny   ip any any log
-    #ip access-list extended PRIO1
-    # permit ospf any any
-    #ip access-list extended PRIO2
-    # permit ip host 10.112.191.191 host 10.112.143.242
-    # permit udp 172.18.0.0 0.0.255.255 host 10.112.191.251 eq domain
-    # permit udp 172.18.0.0 0.0.255.255 host 10.112.191.251 eq domain ntp netbios-ns
     def _buildFromParsedObj(self, parsedObj):
         """
         parsedObj attributes:
@@ -1301,9 +1295,9 @@ class CiscoACLRule(CiscoGroup):
             raise C2CException("Unrecognized proto/port")
         
     def _getAnyPort(self, proto):
-        if proto in ['ip','tcp','udp']:
-            type = 'port'
-        elif proto in ['icmp','ospf','esp','ah','ahp','vrrp','skip','gre']:
+        if proto in SUPPORTED_IP_PROTO:
+            type = 'ip'
+        elif proto in SUPPORTED_NO_IP_PROTO:
             type = proto
         else:
             raise C2CException('Cannot find the "any" service for protocol "%s"' %proto)
@@ -2318,7 +2312,7 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
         for c2c in self.c2c_list:
             for grpObj in [obj for obj in c2c.obj_list if obj.getClass() in GROUP_CLASSES]:
                 # if group is in other c2c instances
-                dupGrpList = [obj for obj in make_flat([tmpc2c.obj_list for tmpc2c in self.c2c_list]) if obj.getClass() in GROUP_CLASSES and (grpObj.name == obj.name or grpObj.name in obj.alias)]
+                dupGrpList = [obj for obj in flatten_array([tmpc2c.obj_list for tmpc2c in self.c2c_list]) if obj.getClass() in GROUP_CLASSES and (grpObj.name == obj.name or grpObj.name in obj.alias)]
                 if len(dupGrpList) > 0:
                     self._renameObjects(dupGrpList, grpObj.name)
         
@@ -2398,5 +2392,4 @@ class Cisco2CheckpointManager(Cisco2Checkpoint):
         self.natRuCt = sum([obj.natRuCt for obj in self.c2c_list])
         #self.aclRuImCt = sum([obj.aclRuImCt for obj in self.c2c_list])
         self.aclRuCt = len(self.findObjByType(['CiscoACLRule']))
-
 

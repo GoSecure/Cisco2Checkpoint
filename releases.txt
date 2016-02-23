@@ -1,24 +1,29 @@
 Known limitations
- - DBEdit cannot import output if it was generated from a Windows Machine
- - The script cannot add new firewall rules. It can only update currently existing one.
- - The script support only Accept and Drop actions
- - The script support only None and Log tracking
- - The script does not support "VPN" field yet.
- - The script create only static NAT and hide NAT rules (not dynamic ones)
- - Does not support IPv6 (so any4 or any become any)
- - Does not support "service-object object" as group members
+ - The script convert "permit" to "allow" and "deny" to "deny". The script 
+   does generate rules with "reject" or checkpoint proprietary actions.
+ - The script support only None and Log tracking.
+ - The script does not feed the "VPN" field.
+ - The NAT rule translation is buggy.
+ - The script does not support IPv6 (so any4 or any6 become any)
+ - Redundant groups are not merged yet.
 
 TODO 
- - fix DC_PORT_RANGE with source + destination. Fix parser ideally
- - check group merge with -01
- - Distinct IOS vs ASA
  - Add a "--no-any-any" feature to avoid import of any/any rules
  - Look for examples with client DATA
- - run pep8
  - add counters to c2c.addObj() to automatically increase counters
- - remove unused variables
- - find good way to increment version
- - review function's documentation and comments
+ - check group merge with -01
+ - run pep8
+ - run pylint
+ - run sphinx
+
+v1.0 - 2016-02-21
+Features:
+ - Major refactoring of the parsing to reduce "hacks" and ugly codes
+ - A distinction is made between ASA and IOS. The argument --syntax was added.
+ - Unfortunatly, ciscoconfparse was forked but a pull request to the Project
+   should be made in a near future.
+ - Added support for source ports
+ - Deleted an important number of line of codes
 
 v0.18 - 2016-01-13
 Features:
