@@ -55,9 +55,10 @@ class CiscoObject():
                         # are merged from IP addresses.
     dbClass = None      # Used to determine checkpoint class    
                         # Ex: 
-    alreadyExist = False# Flag to determine if it already exist in checkpoint database
+    alreadyExist = False# Determine if it already exist in checkpoint database
     c2c = None          # Reference to c2c object (parent) 
-    ciscoLines = []    # Cisco line that was used to import the object (useful for verify)
+    ciscoLines = []     # Cisco line that was used to import the object 
+                        #   (useful for --verify)
     
     def __init__(self, c2c, ciscoLine, name, desc='', alreadyExist=False, \
                 color=None):
@@ -100,15 +101,18 @@ class CiscoObject():
                 return NEW_NET_PREFIX+name
             elif isinstance(obj, CiscoRange):
                 return NEW_RANGE_PREFIX+name
-            elif isinstance(obj, CiscoName) or isinstance(obj, CiscoHost):
+            elif isinstance(obj, (CiscoName, CiscoHost)):
                 return NEW_HOST_PREFIX+name
-            elif isinstance(obj, CiscoServiceGroup) or isinstance(obj, CiscoNetGroup):
+            elif isinstance(obj, (CiscoServiceGroup, CiscoNetGroup)): 
                 return NEW_GROUP_PREFIX+name
-            elif isinstance(self,(CiscoServicePort,CiscoServiceRange)) and self.proto == 'tcp':
+            elif isinstance(self,(CiscoServicePort,CiscoServiceRange)) \
+                 and self.proto == 'tcp':
                 return TCP_PREFIX+name
-            elif isinstance(self,(CiscoServicePort,CiscoServiceRange)) and self.proto == 'udp':
+            elif isinstance(self,(CiscoServicePort,CiscoServiceRange)) \
+                 and self.proto == 'udp':
                 return UDP_PREFIX+name
-            elif isinstance(self, (CiscoServicePort,CiscoServiceRange)) and self.proto == 'tcp-udp':
+            elif isinstance(self, (CiscoServicePort,CiscoServiceRange)) \
+                 and self.proto == 'tcp-udp':
                 return TCPUDP_PREFIX+name
             else:
                 return name
@@ -136,12 +140,14 @@ class CiscoObject():
             
     def addAlias(self,text,indent=''):
         if text != None and text != self.name and not text in self.alias:
-            print_debug(indent+'Adding Alias "%s" on object "%s"' % (text, str(self.name)))
+            print_debug(indent+'Adding Alias "%s" on object "%s"' 
+                        % (text, str(self.name)))
             self.alias.append(text)
     
     def addCiscoLine(self,text,indent=''):
         if text != None and not text in self.ciscoLines:
-            print_debug(indent+'Adding CiscoLine "%s" on object "%s"' % (text, str(self.name)))
+            print_debug(indent+'Adding CiscoLine "%s" on object "%s"' 
+                        % (text, str(self.name)))
             self.ciscoLines.append(text)
 
     def setColor(self, color):
@@ -167,7 +173,8 @@ class CiscoService(CiscoObject):
     proto = None
     
     def __init__(self, c2c, name, desc, alreadyExist=False):
-        CiscoObject.__init__(self, c2c, None, name, desc, alreadyExist=alreadyExist)
+        CiscoObject.__init__(self, c2c, None, name, desc, 
+                             alreadyExist=alreadyExist)
         
     def _toDBEditType(self):
         if self.proto == 'tcp':
@@ -187,7 +194,8 @@ class CiscoService(CiscoObject):
         return text.rstrip()
         
     def toDBEditElement(self, groupName):
-        return "addelement services {0} '' services:{1}\n".format(groupName, self.name)
+        return "addelement services {0} '' services:{1}\n".format(groupName, 
+                                                                  self.name)
 
 
 class CiscoGroup(CiscoObject):                
@@ -324,13 +332,14 @@ class CiscoGroup(CiscoObject):
         if len(obj_list) == 1: 
             return obj_list[0]
         elif len(obj_list) > 1:
-            print_debug('Warning: Found %i instances of "%s" (%s)'\
+            print_debug('Warning: Found %i instances of "%s" (%s)'
                         % (len(obj_list),name,type))
             for obj in obj_list:
                 print_debug(obj.toString('  '))
             return obj_list[0]
         else:
-            print_debug('Warning: Could not find object "%s" (%s). The script will create it.' % (name,type))
+            print_debug('Warning: Could not find object "%s" (%s). '
+                        'The script will create it.' % (name,type))
             return None
             
     def _createMemberObj(self, type, v1, v2=None, v3=None):
@@ -387,8 +396,8 @@ class CiscoGroup(CiscoObject):
             elif proto == 'tcp-udp':
                 name = "%s/%s" % (v1,v2)
                 proto,port = v1,v2
-                obj_list1 = self.c2c.findServiceByNum('tcp',port)        # Redo the parsing because
-                obj_list2 = self.c2c.findServiceByNum('udp',port)        # one of these could exist.
+                obj_list1 = self.c2c.findServiceByNum('tcp',port)
+                obj_list2 = self.c2c.findServiceByNum('udp',port)
                 ret1 = self._parseResult(obj_list1, name, 'tcp')
                 ret2 = self._parseResult(obj_list2, name, 'udp')
                 
@@ -416,13 +425,15 @@ class CiscoGroup(CiscoObject):
                 newObj = CiscoServiceRange(self, None, None, 'udp', first, last)
                 self.c2c.portRangeCrCt += 1
                 self.c2c.addObj(newObj)
-        elif type in ['static', 'dynamic']:                # Nat rules
-            name = v1
-            newObj = CiscoHost(self, None, name, name, None, True, \
-                               color=self.c2c.color)
-            self.c2c.addObj(newObj)
-            self.c2c.hostCrCt += 1
-            #raise C2CException('Cannot create a nat external IP "%s" on the fly.' % name)
+# TEMPORARY COMMENTED
+# TODO: Fully support NAT rules
+#        elif type in ['static', 'dynamic']:                # Nat rules
+#            name = v1
+#            newObj = CiscoHost(self, None, name, name, None, True, \
+#                               color=self.c2c.color)
+#            self.c2c.addObj(newObj)
+#            self.c2c.hostCrCt += 1
+#            #raise C2CException('Cannot create a nat external IP "%s" on the fly.' % name)
         elif type == 'object' or type == 'object-group':
             raise C2CException('Cannot create an object member "%s" on the fly.' % v1)
         elif type == 'port-group':
