@@ -16,6 +16,7 @@ TODO
  - run pylint
  - run sphinx
 
+
 v1.0 - 2016-02-21
 Features:
  - Major refactoring of the parsing to reduce "hacks" and ugly codes

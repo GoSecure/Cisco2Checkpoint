@@ -78,7 +78,7 @@ ANY_CLASSES = ['CiscoAnyHost', 'CiscoAnyIcmp', 'CiscoAnyPort']
 GROUP_CLASSES = ['CiscoNetGroup', 'CiscoServiceGroup']
 
 # Classes that have a name (searchable by name)
-NETOBJ_NAMED_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange','CiscoNetGroup']
+NETOBJ_NAMED_CLASSES = ('CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange','CiscoNetGroup')
 SVCOBJ_NAMED_CLASSES = ['CiscoServicePort','CiscoServiceRange','CiscoServiceGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
 
 #
