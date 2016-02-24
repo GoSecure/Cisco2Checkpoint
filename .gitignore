@@ -1,3 +1,4 @@
 logs/
 *.pyc
 lib/*.pyc
+out/
