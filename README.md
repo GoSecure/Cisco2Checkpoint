@@ -105,9 +105,9 @@ Export in a human readable format
 
     ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format text
   
-Export in a human readable form
+Export in a human verifyable form
 
-    ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format text
+    ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --verify --format text
   
 Export for dbedit
 
