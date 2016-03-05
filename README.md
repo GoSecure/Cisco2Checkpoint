@@ -105,11 +105,16 @@ Export in a human readable format
 
     ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format text
   
+Export in a human readable form
+
+    ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format text
+  
 Export for dbedit
 
     ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format dbedit --policy Standard --installOn fw01 --installOn fw02
 
 Import to checkpoint
+
     dbedit -local -f network_script.txt
 
 
