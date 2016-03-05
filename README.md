@@ -94,23 +94,22 @@ Export Modifiers:
 
 Print a summary of what is parsed
 
-    ```
     ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --summary
-    ```
 
 Search some objects
+
     ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --search 'obj-172.16.66.0' --format text
     ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --search 'obj-172.16.66.0' --format text --filter CiscoHost
 
 Export in a human readable form
-    `./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format text`
+    ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format text
   
 Export for dbedit
-    `./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export
-          --format dbedit --policy Standard --installOn fw01 --installOn fw02`
+    ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format dbedit --policy Standard --installOn fw01 --installOn fw02
 
 Import to checkpoint
-    `dbedit -local -f network_script.txt`
+    dbedit -local -f network_script.txt
+
 
 ## Advanced usage
 ```
