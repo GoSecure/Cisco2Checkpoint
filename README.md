@@ -93,13 +93,14 @@ Export Modifiers:
 ## Basic usage
 
 Print a summary of what is parsed
-    `./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --summary`
+
+    ```
+    ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --summary
+    ```
 
 Search some objects
-    `./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt'
-          --search 'obj-172.16.66.0' --format text`
-    `./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt'
-          --search 'obj-172.16.66.0' --format text --filter CiscoHost`
+    ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --search 'obj-172.16.66.0' --format text
+    ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --search 'obj-172.16.66.0' --format text --filter CiscoHost
 
 Export in a human readable form
     `./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export --format text`
