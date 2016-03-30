@@ -1,0 +1,418 @@
+<a>
+
+<network_objects_object>CP_default_Office_Mode_addresses_pool
+<NAT>
+	CP_default_Office_Mode_addresses_pool
+
+	<netobj_adtr_method><![CDATA[adtr_hide]]></netobj_adtr_method>
+	<the_firewalling_obj>ReferenceObject
+	<Name>All</Name>
+	<Table>globals</Table>
+	<Uid>{97AEB368-9AEA-11D5-BD16-0090272CCB30}</Uid>
+	</the_firewalling_obj>
+	<valid_addr_name><![CDATA[]]></valid_addr_name>
+	<valid_ipaddr><![CDATA[0.0.0.0]]></valid_ipaddr>
+	<valid_ipaddr6><![CDATA[::]]></valid_ipaddr6>
+</NAT><add_adtr_rule>true</add_adtr_rule>
+<addr_type_indication><![CDATA[IPv4]]></addr_type_indication>
+<broadcast><![CDATA[allow]]></broadcast>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[Used as a default for Office Mode. If deleted, it must be specified for each gateway individually (in the VPN Clients page Advanced section)]]></comments>
+<edges>
+</edges>
+<ipaddr><![CDATA[172.16.10.0]]></ipaddr>
+<ipaddr6><![CDATA[]]></ipaddr6>
+<location><![CDATA[internal]]></location>
+<location_desc><![CDATA[]]></location_desc>
+<macAddress><![CDATA[]]></macAddress>
+<netmask><![CDATA[255.255.255.0]]></netmask>
+<netmask6><![CDATA[]]></netmask6>
+<type><![CDATA[network]]></type><use_as_wildcard_netmask>false</use_as_wildcard_netmask>
+
+</network_objects_object>
+
+<network_objects_object>LocalMachine
+<bogus_ip><![CDATA[0.0.2.1]]></bogus_ip>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[Check Point Local Machine (Dynamic Interfaces)]]></comments>
+<track><![CDATA[none]]></track>
+<type><![CDATA[dynamic_net_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>LocalMachine_All_Interfaces
+<bogus_ip><![CDATA[0.0.3.1]]></bogus_ip>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[Check Point Local Machine (All Interfaces)]]></comments>
+<track><![CDATA[none]]></track>
+<type><![CDATA[dynamic_net_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>InternalNet
+<bogus_ip><![CDATA[3.2.1.0]]></bogus_ip>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[]]></comments>
+<track><![CDATA[none]]></track>
+<type><![CDATA[dynamic_net_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>DMZNet
+<bogus_ip><![CDATA[3.3.1.0]]></bogus_ip>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[]]></comments>
+<track><![CDATA[none]]></track>
+<type><![CDATA[dynamic_net_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>AuxiliaryNet
+<bogus_ip><![CDATA[3.4.1.0]]></bogus_ip>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[]]></comments>
+<track><![CDATA[none]]></track>
+<type><![CDATA[dynamic_net_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>CPDShield
+<bogus_ip><![CDATA[0.0.0.1]]></bogus_ip>
+<color><![CDATA[red]]></color>
+<comments><![CDATA[DSHIELD IP blocklist]]></comments>
+<track><![CDATA[none]]></track>
+<type><![CDATA[dynamic_net_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>WirelessZone
+<bogus_ip><![CDATA[3.5.0.1]]></bogus_ip>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[]]></comments>
+<type><![CDATA[security_zone_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>DMZZone
+<bogus_ip><![CDATA[3.5.0.2]]></bogus_ip>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[]]></comments>
+<type><![CDATA[security_zone_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>ExternalZone
+<bogus_ip><![CDATA[3.5.0.3]]></bogus_ip>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[]]></comments>
+<type><![CDATA[security_zone_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>InternalZone
+<bogus_ip><![CDATA[3.5.0.4]]></bogus_ip>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[]]></comments>
+<type><![CDATA[security_zone_obj]]></type>
+
+</network_objects_object>
+
+<network_objects_object>LocalMachine_Loopback<add_adtr_rule>false</add_adtr_rule>
+<addr_type_indication><![CDATA[IPv4]]></addr_type_indication>
+<color><![CDATA[dodgerblue3]]></color>
+<comments><![CDATA[Local machine loopback address  range]]></comments>
+<edges>
+</edges>
+<ipaddr_first><![CDATA[127.0.0.1]]></ipaddr_first>
+<ipaddr_first6><![CDATA[]]></ipaddr_first6>
+<ipaddr_last><![CDATA[127.255.255.255]]></ipaddr_last>
+<ipaddr_last6><![CDATA[]]></ipaddr_last6>
+<type><![CDATA[machines_range]]></type>
+
+</network_objects_object>
+
+<network_objects_object>All_Internet<add_adtr_rule>false</add_adtr_rule>
+<addr_type_indication><![CDATA[IPv4]]></addr_type_indication>
+<color><![CDATA[sienna]]></color>
+<comments><![CDATA[All Internet Addresses]]></comments>
+<edges>
+</edges>
+<ipaddr_first><![CDATA[0.0.0.0]]></ipaddr_first>
+<ipaddr_first6><![CDATA[]]></ipaddr_first6>
+<ipaddr_last><![CDATA[255.255.255.255]]></ipaddr_last>
+<ipaddr_last6><![CDATA[]]></ipaddr_last6>
+<type><![CDATA[machines_range]]></type>
+
+</network_objects_object>
+
+<network_objects_object>Trusted_Zone
+<color><![CDATA[blue]]></color>
+<comments><![CDATA[Trusted Zone is resolved dynamically by client using Access Zones  Policy]]></comments>
+<host><![CDATA[TrustedAccessZone]]></host>
+<type><![CDATA[hostname]]></type>
+
+</network_objects_object>
+
+<network_objects_object>Internet_Zone
+<color><![CDATA[light coral]]></color>
+<comments><![CDATA[Internet Zone is resolved dynamically by client using  Access Zones Policy]]></comments>
+<host><![CDATA[InternetAccessZone]]></host>
+<type><![CDATA[hostname]]></type>
+
+</network_objects_object>
+
+<network_objects_object>my-mgmt<DAG>false</DAG><Enable_CPSyslogD>false</Enable_CPSyslogD><Everest>false</Everest><MetaIP_Admin_Server>false</MetaIP_Admin_Server><MetaIP_DHCP_Server>false</MetaIP_DHCP_Server><MetaIP_DNS_Server>false</MetaIP_DNS_Server><MetaIP_RADIUS_Server>false</MetaIP_RADIUS_Server><MetaIP_UAT>false</MetaIP_UAT>
+<QoS_slim_fw_settings>
+	
+<active_external_inbound>true</active_external_inbound><active_external_outbound>true</active_external_outbound><active_internal_inbound>false</active_internal_inbound><active_internal_outbound>false</active_internal_outbound>
+</QoS_slim_fw_settings>
+<SD_profile>ReferenceObject
+<Name>No_protection</Name>
+<Table>profiles</Table>
+<Uid>{A744D79A-414B-4C00-8798-9570FDB8719C}</Uid>
+</SD_profile>
+<SNMP>
+	my-mgmt
+
+	<read_community><![CDATA[]]></read_community>
+	<sysContact><![CDATA[]]></sysContact>
+	<sysDescr><![CDATA[]]></sysDescr>
+	<sysLocation><![CDATA[]]></sysLocation>
+	<sysName><![CDATA[]]></sysName>
+	<write_community><![CDATA[]]></write_community>
+</SNMP><UA_WebAccess>false</UA_WebAccess><UA_gateway>false</UA_gateway><UA_server>false</UA_server><VPN_1>false</VPN_1><WAM>false</WAM><abacus_server>false</abacus_server><accessible_from_smc>true</accessible_from_smc>
+<acct_interval_period>120</acct_interval_period><active_conn_view>false</active_conn_view><add_adtr_rule>false</add_adtr_rule>
+<addr_type_indication><![CDATA[IPv4]]></addr_type_indication>
+<advanced_uf_blade><![CDATA[not-installed]]></advanced_uf_blade><allow_extranet>false</allow_extranet><allow_send_logs>false</allow_send_logs><amazonas_machine>false</amazonas_machine>
+<anti_malware_activation_time><![CDATA[never]]></anti_malware_activation_time>
+<anti_malware_blade><![CDATA[not-installed]]></anti_malware_blade>
+<anti_virus_blade><![CDATA[not-installed]]></anti_virus_blade><antispam_integrated>false</antispam_integrated>
+<appfw_limit_bucket_size_factor>2</appfw_limit_bucket_size_factor>
+<appfw_limit_chunk_size_factor>2</appfw_limit_chunk_size_factor>
+<appfw_limit_low_threshold_factor>80</appfw_limit_low_threshold_factor><appfw_referrer_inspect_on>true</appfw_referrer_inspect_on><appfw_session_suppression>true</appfw_session_suppression><appfw_session_supression_override>false</appfw_session_supression_override>
+<appfw_web_browsing_logging><![CDATA[global]]></appfw_web_browsing_logging>
+<appliance_type><![CDATA[Open server]]></appliance_type>
+<application_firewall_blade><![CDATA[not-installed]]></application_firewall_blade><apply_nat_for_cp_conns>false</apply_nat_for_cp_conns><asm_synatk>false</asm_synatk>
+<asm_synatk_active_mode>1</asm_synatk_active_mode><asm_synatk_external_only>true</asm_synatk_external_only>
+<asm_synatk_log><![CDATA[log]]></asm_synatk_log>
+<asm_synatk_log_level>1</asm_synatk_log_level>
+<asm_synatk_threshold>200</asm_synatk_threshold>
+<asm_synatk_timeout>5</asm_synatk_timeout>
+<au_timeout>15</au_timeout><av_integrated>false</av_integrated>
+<bypass_track><![CDATA[log]]></bypass_track><ca_wait_mode>false</ca_wait_mode>
+<certificates>
+</certificates><clp_enable_gateway>false</clp_enable_gateway><clp_override_global_config>false</clp_override_global_config>
+<color><![CDATA[black]]></color>
+<comments><![CDATA[]]></comments><compliance_blade>false</compliance_blade>
+<connection_state><![CDATA[communicating]]></connection_state><connectra>false</connectra><cp_products_installed>true</cp_products_installed>
+<cp_suite_type><![CDATA[pro]]></cp_suite_type>
+<cpver><![CDATA[9.0]]></cpver>
+<data_loss_prevention_blade><![CDATA[not-installed]]></data_loss_prevention_blade>
+<data_source><![CDATA[not-installed]]></data_source>
+<default_track><![CDATA[alert]]></default_track><define_logging_servers>false</define_logging_servers>
+<device_settings_module><![CDATA[not-installed]]></device_settings_module><disable_replay_check>false</disable_replay_check>
+<display_name_for_sr_sc><![CDATA[]]></display_name_for_sr_sc>
+<edges>
+</edges><enable_application_control_usercheck_agent>false</enable_application_control_usercheck_agent><enable_auto_contracts_update>false</enable_auto_contracts_update><enable_identity_logging>false</enable_identity_logging><enable_ip_reputation>false</enable_ip_reputation><enable_log_cloud>false</enable_log_cloud><enable_rtm_counters_report>true</enable_rtm_counters_report><enable_rtm_traffic_report>false</enable_rtm_traffic_report><enable_rtm_traffic_report_per_connection>false</enable_rtm_traffic_report_per_connection><enable_usercheck>true</enable_usercheck><enforce_gtp_rate_limit>false</enforce_gtp_rate_limit><eps_remoteHelp>false</eps_remoteHelp>
+<eps_symmetricDS_type><![CDATA[None]]></eps_symmetricDS_type><event_analyzer>false</event_analyzer><exportable>false</exportable>
+<firewall><![CDATA[not-installed]]></firewall>
+<floodgate><![CDATA[not-installed]]></floodgate>
+<floodgate_setting>
+	my-mgmt
+
+	<fgver><![CDATA[9.0]]></fgver>
+</floodgate_setting>
+<free_fields>
+</free_fields><fw_clamp_tcp_mss_control>false</fw_clamp_tcp_mss_control>
+<fwfrag_timeout_log_interval>60</fwfrag_timeout_log_interval>
+<fwfrag_timeout_log_threshold>10</fwfrag_timeout_log_threshold>
+<fwldap_RequestTimeout>20</fwldap_RequestTimeout>
+<fwsynatk_max>5000</fwsynatk_max>
+<fwsynatk_method><![CDATA[0]]></fwsynatk_method>
+<fwsynatk_timeout>10</fwsynatk_timeout>
+<fwsynatk_warning>1</fwsynatk_warning>
+<gtp_fg_context_timeout>300</gtp_fg_context_timeout>
+<gtp_ldap_cache_timeout>90</gtp_ldap_cache_timeout>
+<gtp_paths_timeout>600</gtp_paths_timeout>
+<gtp_pending_hashsize>65536</gtp_pending_hashsize>
+<gtp_pending_limit>25000</gtp_pending_limit>
+<gtp_pending_timeout>40</gtp_pending_timeout>
+<gtp_rate_limit>2048</gtp_rate_limit><gtp_sam_close_upon_delete>false</gtp_sam_close_upon_delete>
+<gtp_tunnels_hashsize>65536</gtp_tunnels_hashsize>
+<gtp_tunnels_limit>50000</gtp_tunnels_limit>
+<gtp_tunnels_timeout>90000</gtp_tunnels_timeout>
+<gx_version><![CDATA[2.5]]></gx_version>
+<high_cpu_watermark>90</high_cpu_watermark>
+<high_memory_watermark>90</high_memory_watermark>
+<hosted_by_mds><![CDATA[]]></hosted_by_mds>
+<http_next_proxy_host><![CDATA[]]></http_next_proxy_host>
+<http_next_proxy_port><![CDATA[]]></http_next_proxy_port>
+<icap_client>
+	
+<enabled>false</enabled>
+	<icap_server_addr><![CDATA[]]></icap_server_addr>
+	<icap_server_port>0</icap_server_port>
+	<methods>
+	</methods>
+	<type><![CDATA[icap_client_settings]]></type>
+</icap_client><ics_update_supported>false</ics_update_supported><ignore_mgmt_if>false</ignore_mgmt_if><ike_support_crash_recovery_sr>true</ike_support_crash_recovery_sr><inspect2c_activate>false</inspect2c_activate><inspect2c_compile>false</inspect2c_compile><integrity_server>false</integrity_server>
+<integrity_server_port><![CDATA[443]]></integrity_server_port>
+<interfaces>
+	<unnamed_element setname="0">
+		
+
+		<comments><![CDATA[]]></comments>
+		<description><![CDATA[]]></description><dual_wan>false</dual_wan><dynamic_ip>false</dynamic_ip>
+		<edges>
+		</edges>
+		<ifindex>0</ifindex>
+		<ipaddr><![CDATA[10.0.1.102]]></ipaddr>
+		<ipaddr6><![CDATA[]]></ipaddr6><monitored_by_cluster>false</monitored_by_cluster>
+		<mss_value>0</mss_value>
+		<netmask><![CDATA[255.255.255.0]]></netmask>
+		<netmask6><![CDATA[]]></netmask6>
+		<officialname><![CDATA[eth0]]></officialname>
+		<security>
+			
+<antispoof>true</antispoof>
+			<netaccess>
+				
+
+				<access><![CDATA[undefined]]></access><dmz>false</dmz><enable_overlapping_nat>false</enable_overlapping_nat><force_policy>true</force_policy>
+				<internal_type><![CDATA[undefined]]></internal_type><leads_to_internet>false</leads_to_internet>
+				<log><![CDATA[log]]></log><monitor_anti_spoofing>false</monitor_anti_spoofing>
+				<overlap_nat_dst_ipaddr><![CDATA[]]></overlap_nat_dst_ipaddr>
+				<overlap_nat_netmask><![CDATA[255.255.255.0]]></overlap_nat_netmask>
+				<overlap_nat_src_ipaddr><![CDATA[]]></overlap_nat_src_ipaddr><perform_anti_spoofing>false</perform_anti_spoofing>
+			</netaccess>
+		</security><shared>true</shared><vpn_trusted>false</vpn_trusted>
+	</unnamed_element>
+</interfaces>
+<ipaddr><![CDATA[10.0.1.102]]></ipaddr>
+<ipaddr6><![CDATA[]]></ipaddr6>
+<ipaddr_from_mac><![CDATA[]]></ipaddr_from_mac><ips_event_correlator>true</ips_event_correlator><ips_event_manager>false</ips_event_manager><is_bypass_sd_under_load>false</is_bypass_sd_under_load><is_profile_gw>false</is_profile_gw><legacy_eps>false</legacy_eps>
+<location><![CDATA[internal]]></location><log_consolidator>false</log_consolidator><log_indexer>false</log_indexer>
+<log_policy>
+	
+<Citrix_ICA_application_detection>false</Citrix_ICA_application_detection>
+	<acct_update_interval>3600</acct_update_interval>
+	<alert_free_disk_space>3000</alert_free_disk_space>
+	<alert_free_disk_space_metrics><![CDATA[mbytes]]></alert_free_disk_space_metrics><alert_on_disk_space>true</alert_on_disk_space>
+	<alert_type><![CDATA[alert]]></alert_type>
+	<dlp_blob_delete_above_value_percentage>20</dlp_blob_delete_above_value_percentage><dlp_blob_delete_on_above>false</dlp_blob_delete_on_above><dlp_blob_delete_on_run_script>false</dlp_blob_delete_on_run_script>
+	<dlp_blob_fetch_bulk_size>200</dlp_blob_fetch_bulk_size>
+	<dlp_blob_fetch_interval>5</dlp_blob_fetch_interval>
+	<dlp_blob_retry_interval>180</dlp_blob_retry_interval><etm_logging>true</etm_logging><forward_event>false</forward_event><forward_log_without_delete>false</forward_log_without_delete><forward_logs>false</forward_logs><index_delete_above_size>false</index_delete_above_size>
+	<index_delete_above_size_metrics><![CDATA[mbytes]]></index_delete_above_size_metrics>
+	<index_delete_above_size_value>100000</index_delete_above_size_value><index_delete_older_than>true</index_delete_older_than>
+	<index_delete_older_than_value>14</index_delete_older_than_value>
+	<log_delete_below_metrics><![CDATA[mbytes]]></log_delete_below_metrics>
+	<log_delete_below_value>5000</log_delete_below_value><log_delete_on_below>true</log_delete_on_below><log_delete_on_run_script>false</log_delete_on_run_script>
+	<log_delete_script_command><![CDATA[]]></log_delete_script_command>
+	<log_keep_days_value>0</log_keep_days_value><log_keep_on_days>false</log_keep_on_days><log_switch_before_forwarding>false</log_switch_before_forwarding><log_switch_on_file_size>false</log_switch_on_file_size>
+	<log_switch_size>1000</log_switch_size>
+	<min_free_disk_space>100</min_free_disk_space>
+	<packets_capture_reserved_disk_metrics><![CDATA[mbytes]]></packets_capture_reserved_disk_metrics>
+	<packets_capture_reserved_disk_size_MB>500</packets_capture_reserved_disk_size_MB>
+	<packets_capture_reserved_disk_size_percent>15</packets_capture_reserved_disk_size_percent><reject_connections>false</reject_connections><scheduled_switch>false</scheduled_switch>
+	<stop_free_disk_space_metrics><![CDATA[mbytes]]></stop_free_disk_space_metrics><stop_logging_on_free_disk_space>false</stop_logging_on_free_disk_space>
+</log_policy><log_server>true</log_server>
+<low_cpu_watermark>70</low_cpu_watermark>
+<low_memory_watermark>70</low_memory_watermark>
+<macAddress><![CDATA[]]></macAddress><management>true</management>
+<management_ifc><![CDATA[]]></management_ifc>
+<management_type><![CDATA[3_Blades_Basic]]></management_type>
+<masters>
+</masters><mgmt_interface_enabled>true</mgmt_interface_enabled><monitor_blade>false</monitor_blade><mta_enabled>false</mta_enabled>
+<mta_settings>
+	
+
+	<cert_key><![CDATA[]]></cert_key>
+	<delay_time_for_tracking_in_min>10</delay_time_for_tracking_in_min>
+	<disk_space_limit_in_mb>1024</disk_space_limit_in_mb>
+	<disk_space_limit_percent>70</disk_space_limit_percent>
+	<disk_space_limit_type><![CDATA[percent]]></disk_space_limit_type>
+	<domains_rulebase>
+		
+
+		<domain_rules>
+		</domain_rules>
+		<type><![CDATA[mta_domains_rulebase]]></type>
+	</domains_rulebase><enable_tls>false</enable_tls>
+	<interfaces_listen_to><![CDATA[all_interfaces]]></interfaces_listen_to>
+	<mail_signature><![CDATA[Email secured by Check Point]]></mail_signature>
+	<max_mail_delay_time_in_min>25</max_mail_delay_time_in_min>
+	<specific_interfaces>
+	</specific_interfaces>
+	<type><![CDATA[mta_settings]]></type><use_mail_signature>true</use_mail_signature>
+</mta_settings>
+<option_pack>1</option_pack>
+<os_info>
+	
+
+	<osBuildNum>10238976</osBuildNum>
+	<osName><![CDATA[Gaia]]></osName>
+	<osSPMajor>10238976</osSPMajor>
+	<osSPMinor>10238976</osSPMinor>
+	<osType>0</osType>
+	<osVerMajor>2</osVerMajor>
+	<osVerMinor>6</osVerMinor>
+	<osVersionLevel><![CDATA[ ]]></osVersionLevel>
+</os_info><override_enable_auto_contracts_update_deafult>false</override_enable_auto_contracts_update_deafult><performancepack>false</performancepack>
+<portals>
+</portals>
+<portals_default_hostname><![CDATA[]]></portals_default_hostname>
+<portals_fixed_hostname><![CDATA[]]></portals_fixed_hostname><primary_management>true</primary_management>
+<primary_stand_alone_web_ui_port><![CDATA[443]]></primary_stand_alone_web_ui_port>
+<product_versions>
+</product_versions><protect_internal_interfaces_only>true</protect_internal_interfaces_only><proxy_enable_override_settings>false</proxy_enable_override_settings><proxy_on_gw_enabled>false</proxy_on_gw_enabled>
+<proxy_on_gw_settings>
+	
+<general_headers>true</general_headers>
+	<interfaces_list>
+	</interfaces_list>
+	<interfaces_type><![CDATA[internal_interfaces]]></interfaces_type><log_errors>true</log_errors>
+	<ports>
+	</ports><reject_malformed_requests>false</reject_malformed_requests><tarnsparent_mode>false</tarnsparent_mode>
+	<type><![CDATA[gw_as_proxy_settings]]></type><xff_header>false</xff_header>
+</proxy_on_gw_settings>
+<radius_server>ReferenceObject
+<Name>None</Name>
+<Table>globals</Table>
+<Uid>{97AEB36A-9AEA-11D5-BD16-0090272CCB30}</Uid>
+</radius_server><real_time_monitor>false</real_time_monitor>
+<realms_for_blades>
+</realms_for_blades><reporting_server>true</reporting_server><sam_allow_remote_request>true</sam_allow_remote_request><sam_enable_purge_history_file>false</sam_enable_purge_history_file>
+<sam_policy_max_reqs>20000</sam_policy_max_reqs>
+<sam_proxy_backwards_compatibility_security_method><![CDATA[]]></sam_proxy_backwards_compatibility_security_method>
+<sam_purge_file_start_size>100</sam_purge_file_start_size><sc_portal>true</sc_portal><sd_reject_on_cluster_fo>false</sd_reject_on_cluster_fo>
+<series_type><![CDATA[3_Blades_Basic]]></series_type>
+<session_interval>10800</session_interval>
+<sic_identifier>
+	
+
+	<id_type><![CDATA[ip_addr]]></id_type>
+	<id_value><![CDATA[]]></id_value>
+</sic_identifier>
+<sic_name><![CDATA[cn=cp_mgmt,o=my-mgmt..mjpkrd]]></sic_name>
+<slim_fw_hardware_type><![CDATA[]]></slim_fw_hardware_type>
+<slim_fw_type><![CDATA[]]></slim_fw_type><smart_center_backup>false</smart_center_backup><smartevent_intro>false</smartevent_intro>
+<smartevent_intro_type><![CDATA[]]></smartevent_intro_type>
+<ssl_attributes>
+	
+
+	<cipher_suites>
+	</cipher_suites>
+	<citrix_port>0</citrix_port>
+	<ssl_verify_chain_depth>0</ssl_verify_chain_depth>
+</ssl_attributes><ssl_inspection_enabled>false</ssl_inspection_enabled><support_sr_ike_mm>true</support_sr_ike_mm>
+<supports_tcp_ike><![CDATA[use_site_default]]></supports_tcp_ike>
+<svn_build_num>990180000</svn_build_num>
+<svn_version_name><![CDATA[R77.30]]></svn_version_name><sync_web_ui_port_with_gw_flag>false</sync_web_ui_port_with_gw_flag>
+<threat_emulation_blade><![CDATA[not-installed]]></threat_emulation_blade>
+<traditional_av_deactivation_time><![CDATA[never]]></traditional_av_deactivation_time>
+<type><![CDATA[host]]></type><uf_integrated>false</uf_integrated><upload_logs>true</upload_logs><use_loggers_and_masters>false</use_loggers_and_masters><used_globaly>false</used_globaly><user_dir_blade>false</user_dir_blade>
+<user_friendly><![CDATA[]]></user_friendly>
+
+</network_objects_object>
+</a>

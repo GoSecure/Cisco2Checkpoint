@@ -5,8 +5,8 @@ C2C_DEBUG = False
 # Some default variables mostly used by c2c.py but also by the lib.
 #
 DEFAULT_FORMAT = 'dbedit'
-DEFAULT_CP_PORT_FILE = 'cp/services_objects.xml'
-DEFAULT_CP_NETOBJ_FILE = 'cp/network_objects.xml'
+DEFAULT_CP_NETOBJ_FILE = 'cp/default_r7730_network_objects.xml'
+DEFAULT_CP_PORT_FILE = 'cp/default_r7730_service_objects.xml'
 DEFAULT_OUTPUT_FILE = 'network_script.txt'
 DEFAULT_POLICY = 'Standard'
 DEFAULT_INSTALLON = 'vs01'
