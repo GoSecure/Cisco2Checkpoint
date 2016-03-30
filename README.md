@@ -5,7 +5,25 @@ built to run on Linux but it should run on Windows. It supports IOS and ASA synt
 
 The tool require Python 2.7 and a forked version of [ciscoconfparse](https://pypi.python.org/pypi/ciscoconfparse) (included).
 
-[TOC]
+## Table of Contents
+
+  * [cisco2checkpoint migration tool](#cisco2checkpoint-migration-tool)
+        * [Features](#features)
+        * [Where do we start?](#where-do-we-start)
+          * [Step 1: Prepare](#step-1-prepare)
+            * [Migration type](#migration-type)
+            * [Review config file](#review-config-file)
+          * [Step 2: Convert](#step-2-convert)
+            * [Conversion: Clean install](#conversion-clean-install)
+            * [Conversion: Existing install](#conversion-existing-install)
+          * [Step 3: Import](#step-3-import)
+          * [Step 4: Verify](#step-4-verify)
+          * [Step 5: Fix](#step-5-fix)
+        * [Help](#help)
+        * [Other features](#other-features)
+        * [Known limitations](#known-limitations)
+        * [Warning](#warning)
+        * [License](#license)
 
 ## Features
 
@@ -41,6 +59,7 @@ To begin, the user should make a quick analysis of the target firewall. Here are
 #### Migration type
 
 ** Clean Install: ** This is the easiest type of migration. The import will be performed on a new SmartCenter with no (or very few) objects and firewall rules.
+
 ** Existing Install: ** This imply some additional activities to retrieve the list of existing network and service objects.
 
 #### Review config file
@@ -96,9 +115,7 @@ python2.7 c2c.py --ciscoFile 'some_cisco_conf.txt'
 
 ### Step 3: Import
 
-Before import, make sure no "write mode" session is opened with SmartDashboard.
-
-Then run:
+Before import, make sure no "write mode" session is opened with SmartDashboard. Also make sure that there is **no empty lines** and that the return characters are **\n** (not \r\n). Then run:
 
     dbedit -local -f network_script.txt
 
@@ -122,7 +139,7 @@ Now that a lot of time was saved by massively importing objects and firewall rul
 Depending on the number of access list that were imported, and their assignation to interfaces, chances are high that the policy will not compile unless this step is completed.
 
 
-### Help
+## Help
 ```
 usage: c2c.py [-h] [-v] [--debug] [--summary] [--export] [--verify]
               [--search TEXT] [--ciscoFile FILE] [--ciscoDir DIR]
@@ -220,6 +237,16 @@ Export in a human verifyable form
 - The NAT rule translation is buggy.
 - The script does not support IPv6 (so any4 or any6 become any)
 - Redundant groups are not merged yet
+
+
+## Warning
+
+** Layer 2 vs Layer 3 : ** As some of you may know, Checkpoint policy is layer 3 based, meaning that firewall interfaces are completely abstracted from the policy. In fact, it is not possible to assign a rule to an interface like Cisco do. As of this writing, manual review must be performed after import.
+
+** Cisco syntax : ** Cisco tends to be very flexible when it's time to write a line allow one to define an object in multiple ways. This lead to a lot of parsing fun (see class ASAACLLine in `./lib/ciscoconfparse/models_asa.py` for an example. This has lead to a lot of troubleshooting and patches. 
+
+** ASA vs IOS : ** ASA and IOS have different syntaxes, which also lead to more complexe and potentially buggy code. Use at your own risk.
+
 
 ## License
 
