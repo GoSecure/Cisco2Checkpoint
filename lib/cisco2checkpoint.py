@@ -74,7 +74,10 @@ class CiscoObject():
         self.alias = []
         self.addAlias(n)
         self.alreadyExist = alreadyExist
-        self.color = color
+        if color is not None:
+            self.color = color
+        else:
+            self.color = 'black'
         
     def __str__(self):
         return str(self.toString())
@@ -453,7 +456,7 @@ class CiscoGroup(CiscoObject):
         obj = self._getMemberObj(type,v1,v2,v3)
         if obj == None:
             raise C2CException('Could not find mandatory "%s" object '\
-                               'named "%s" for group' % (type,v1,self.name))
+                               'named "%s" for group %s' % (type,v1,self.name))
         return obj
         
     def _getAndAddMemberObj(self,type,v1,v2=None,v3=None):
@@ -514,8 +517,8 @@ class CiscoHost(CiscoName):
             name = parsedObj.name
             desc = parsedObj.description
             mm_r = parsedObj.result_dict
-            ipaddr = mm_r['ipaddr']
-            CiscoName.__init__(self, c2c, None, name, ipaddr, desc, \
+            ipAddr = mm_r['ipaddr']
+            CiscoName.__init__(self, c2c, None, name, ipAddr, desc, \
                                alreadyExist, color)
         else:
             CiscoName.__init__(self, c2c, None, name, ipAddr, desc, \
@@ -1684,6 +1687,7 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all names.')
         self.nameImCt = 0
         for n in names:
+            print_debug('  Importing: %s' % n)
             self.addObj(CiscoName(self, n, color=self.color))
             self.nameImCt += 1
         
@@ -1691,6 +1695,7 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all hosts.')
         self.hostImCt = 0
         for h in hosts:
+            print_debug('  Importing: %s' % h)
             self.addObj(CiscoHost(self, h, color=self.color))
             self.hostImCt += 1
 
@@ -1698,6 +1703,7 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all networks.')
         self.netImCt = 0
         for n in networks:
+            print_debug('  Importing: %s' % n)
             self.addObj(CiscoNet(self, n, color=self.color))
             self.netImCt += 1
 
@@ -1705,6 +1711,7 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all ranges.')
         self.rangeImCt = 0
         for r in ranges:
+            print_debug('  Importing: %r' % h)
             self.addObj(CiscoRange(self, r, color=self.color))
             self.rangeImCt += 1
             
@@ -1712,6 +1719,7 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all single ports objects.')
         self.singlePortImCt = 0
         for p in ports:                    
+            print_debug('  Importing: %s' % p)
             self.addObj(CiscoServicePort(self, p))    
             self.singlePortImCt += 1
             
@@ -1719,6 +1727,7 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all port ranges objects.')
         self.portRangeImCt = 0
         for p in ports:                    
+            print_debug('  Importing: %s' % p)
             self.addObj(CiscoServiceRange(self, p))    
             self.portRangeImCt += 1
             
@@ -1726,6 +1735,7 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all net/host/range groups.')
         self.netGrImCt = 0
         for newGrp in groups:                    
+            print_debug('  Importing: %s' % newGrp)
             self.addObj(CiscoNetGroup(self, newGrp, color=self.color))    
             self.netGrImCt += 1
             
@@ -1733,12 +1743,14 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all port groups.')
         self.portGrCt = 0
         for newGrp in groups:        
+            print_debug('  Importing: %s' % newGrp)
             self.addObj(CiscoServiceGroup(self, newGrp))        
             self.portGrCt += 1
             
     def _importProtoGroups(self, groups):
         print_msg('Importing all protocol groups.')
         for newGrp in groups:        
+            print_debug('  Importing: %s' % newGrp)
             obj = CiscoProtoGroup(self, newGrp)
             if 'any' in [member.name for member in obj.members]:
                 self.addObj(member)
@@ -2223,7 +2235,7 @@ class Cisco2Checkpoint(CiscoObject):
                         self.portRangeCrCt)
     
     def toDBEdit(self):
-        return ''.join([obj.toDBEdit() for obj in self.obj_list if isinstance(obj, CiscoName)] + \
+        return ''.join([obj.toDBEdit() for obj in self.obj_list if isinstance(obj, CiscoName) and obj.alreadyExist == False] + \
                 [obj.toDBEdit() for obj in self.obj_list if (isinstance(obj, CiscoHost) and obj.alreadyExist == False)] + \
                 [obj.toDBEdit() for obj in self.obj_list if (isinstance(obj, CiscoNet) and obj.alreadyExist == False)] + \
                 [obj.toDBEdit() for obj in self.obj_list if (isinstance(obj, CiscoRange) and obj.alreadyExist == False)] + \
