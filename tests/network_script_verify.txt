@@ -1,0 +1,85 @@
+CiscoHost(name=myHost,ipAddr=10.0.1.201,desc= description mdube's VM in lab,alias=)
+CiscoNet(name=myLAN,ipAddr=10.0.1.0/255.255.255.0,desc= description LAN,alias=)
+CiscoNet(name=myDMZ,ipAddr=10.0.2.0/255.255.255.0,desc= description DMZ,alias=)
+CiscoIcmp(name=echo-reply,desc=ICMP, echo reply,alias=)
+CiscoIcmp(name=dest-unreach,desc=ICMP, destination unreach,alias=unreachable)
+CiscoIcmp(name=source-quench,desc=ICMP, source quench,alias=)
+CiscoIcmp(name=redirect,desc=ICMP, route redirect,alias=mobile-redirect)
+CiscoIcmp(name=echo-request,desc=ICMP, echo request,alias=echo)
+CiscoIcmp(name=time-exceeded,desc=ICMP, time to live exceeded,alias=)
+CiscoIcmp(name=param-prblm,desc=ICMP, parameters problem,alias=parameter-problem)
+CiscoIcmp(name=timestamp,desc=ICMP, timestamp request,alias=)
+CiscoIcmp(name=timestamp-reply,desc=ICMP, timestamp reply,alias=)
+CiscoIcmp(name=info-req,desc=ICMP, info request,alias=information-request)
+CiscoIcmp(name=info-reply,desc=ICMP, info reply,alias=information-reply)
+CiscoIcmp(name=mask-request,desc=ICMP, mask request,alias=)
+CiscoIcmp(name=mask-reply,desc=ICMP, mask reply,alias=)
+CiscoServiceRange(name=MyInternalPorts,port=49152-65535,src_port=1-65535,desc= description Client to DCs tcp Ports)
+CiscoNetGroup(name=MyInternal,desc=,nbMembers=2,alias=)
+ CiscoNet(name=myLAN,ipAddr=10.0.1.0/255.255.255.0,desc= description LAN,alias=)
+ CiscoNet(name=myDMZ,ipAddr=10.0.2.0/255.255.255.0,desc= description DMZ,alias=)
+ Verify: <ASAObjGroupNetwork # 18 'object-group network MyInternal'> 
+CiscoHost(name=H_10.0.1.101,ipAddr=10.0.1.101,desc=,alias=)
+CiscoNetGroup(name=MyAdmins,desc=,nbMembers=2,alias=)
+ CiscoHost(name=myHost,ipAddr=10.0.1.201,desc= description mdube's VM in lab,alias=)
+ CiscoHost(name=H_10.0.1.101,ipAddr=10.0.1.101,desc=,alias=)
+ Verify: <ASAObjGroupNetwork # 22 'object-group network MyAdmins'> 
+CiscoServiceRange(name=TCP_8194-8198,port=8194-8198,desc=)
+CiscoServiceRange(name=TCP_4209-4220,port=4209-4220,desc=)
+CiscoServiceGroup(name=MyCustomAppPorts,desc=,nbMembers=3)
+ CiscoServiceRange(name=TCP_8194-8198,port=8194-8198,desc=)
+ CiscoServiceRange(name=TCP_4209-4220,port=4209-4220,desc=)
+ CiscoServicePort(name=ldap,port=389,desc=Lightweight Directory Access Protocol,alias=)
+ Verify: <ASAObjGroupService # 26 'MyCustomAppPorts'> 
+ACLRule(name=lan,src=myLAN,dst=any,port=http;https;ftp,action=permit,pol=My_Policy,inst=My_Firewall,disabled=False,desc=LAN access to internet)
+ Desc:LAN access to internet
+ Src: CiscoNet(name=myLAN,ipAddr=10.0.1.0/255.255.255.0,desc= description LAN,alias=)
+ Dst: CiscoAnyHost(name=any,ipAddr=None,desc=,alias=)
+ Port: CiscoServicePort(name=http,port=80,desc=Hypertext Transfer Protocol,alias=)
+ Port: CiscoServicePort(name=https,port=443,desc=HTTP protocol over TLS/SSL,alias=)
+ Port: CiscoServicePort(name=ftp,port=21,desc=File Transfer Protocol,alias=)
+ Verify: <ASAAclLine # 44 'access-list lan extended permit tcp object myLAN any4 eq www https'> 
+ Verify: <ASAAclLine # 45 'access-list lan extended permit tcp object myLAN any4 eq ftp'> 
+ACLRule(name=lan,src=myLAN,dst=myDMZ,port=MyCustomAppPorts,action=permit,pol=My_Policy,inst=My_Firewall,disabled=False,desc=LAN access to DMZ )
+ Desc:LAN access to DMZ 
+ Src: CiscoNet(name=myLAN,ipAddr=10.0.1.0/255.255.255.0,desc= description LAN,alias=)
+ Dst: CiscoNet(name=myDMZ,ipAddr=10.0.2.0/255.255.255.0,desc= description DMZ,alias=)
+ Port: CiscoServiceGroup(name=MyCustomAppPorts,desc=,nbMembers=3)
+   CiscoServiceRange(name=TCP_8194-8198,port=8194-8198,desc=)
+   CiscoServiceRange(name=TCP_4209-4220,port=4209-4220,desc=)
+   CiscoServicePort(name=ldap,port=389,desc=Lightweight Directory Access Protocol,alias=)
+ Verify: <ASAAclLine # 47 'access-list lan extended permit tcp object myLAN object myDMZ object-group MyCustomAppPorts'> 
+ACLRule(name=lan,src=MyAdmins,dst=any,port=any,action=permit,pol=My_Policy,inst=My_Firewall,disabled=False,desc=Admin access)
+ Desc:Admin access
+ Src: CiscoNetGroup(name=MyAdmins,desc=,nbMembers=2,alias=)
+   CiscoHost(name=myHost,ipAddr=10.0.1.201,desc= description mdube's VM in lab,alias=)
+   CiscoHost(name=H_10.0.1.101,ipAddr=10.0.1.101,desc=,alias=)
+ Dst: CiscoAnyHost(name=any,ipAddr=None,desc=,alias=)
+ Port: CiscoAnyPort(name=any,port=0,desc=,alias=)
+ Verify: <ASAAclLine # 49 'access-list lan extended permit ip object-group myAdmins any4'> 
+CiscoHost(name=H_10.0.1.10,ipAddr=10.0.1.10,desc=,alias=)
+ACLRule(name=dmz,src=myDMZ,dst=H_10.0.1.10,port=MyInternalPorts,action=permit,pol=My_Policy,inst=My_Firewall,disabled=False,desc=DMZ access to internet)
+ Desc:DMZ access to internet
+ Src: CiscoNet(name=myDMZ,ipAddr=10.0.2.0/255.255.255.0,desc= description DMZ,alias=)
+ Dst: CiscoHost(name=H_10.0.1.10,ipAddr=10.0.1.10,desc=,alias=)
+ Port: CiscoServiceRange(name=MyInternalPorts,port=49152-65535,src_port=1-65535,desc= description Client to DCs tcp Ports)
+ Verify: <ASAAclLine # 51 'access-list dmz extended permit object MyInternalPorts object myDMZ host 10.0.1.10'> 
+CiscoAnyIcmp(name=icmp-proto,desc=,alias=any)
+ACLRule(name=outbound,src=any,dst=MyInternal,port=icmp-proto,action=permit,pol=My_Policy,inst=My_Firewall,disabled=False,desc=Internet access)
+ Desc:Internet access
+ Src: CiscoAnyHost(name=any,ipAddr=None,desc=,alias=)
+ Dst: CiscoNetGroup(name=MyInternal,desc=,nbMembers=2,alias=)
+   CiscoNet(name=myLAN,ipAddr=10.0.1.0/255.255.255.0,desc= description LAN,alias=)
+   CiscoNet(name=myDMZ,ipAddr=10.0.2.0/255.255.255.0,desc= description DMZ,alias=)
+ Port: CiscoAnyIcmp(name=icmp-proto,desc=,alias=any)
+ Verify: <ASAAclLine # 53 'access-list outbound extended permit icmp any4 object-group MyInternal object-group MyICMP'> 
+ACLRule(name=outbound,src=MyInternal,dst=any,port=http;https;ftp,action=permit,pol=My_Policy,inst=My_Firewall,disabled=False,desc=)
+ Desc:
+ Src: CiscoNetGroup(name=MyInternal,desc=,nbMembers=2,alias=)
+   CiscoNet(name=myLAN,ipAddr=10.0.1.0/255.255.255.0,desc= description LAN,alias=)
+   CiscoNet(name=myDMZ,ipAddr=10.0.2.0/255.255.255.0,desc= description DMZ,alias=)
+ Dst: CiscoAnyHost(name=any,ipAddr=None,desc=,alias=)
+ Port: CiscoServicePort(name=http,port=80,desc=Hypertext Transfer Protocol,alias=)
+ Port: CiscoServicePort(name=https,port=443,desc=HTTP protocol over TLS/SSL,alias=)
+ Port: CiscoServicePort(name=ftp,port=21,desc=File Transfer Protocol,alias=)
+ Verify: <ASAAclLine # 54 'access-list outbound extended permit tcp object-group MyInternal any4 eq www https ftp'> 

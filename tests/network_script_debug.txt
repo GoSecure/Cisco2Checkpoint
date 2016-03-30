@@ -1,0 +1,84 @@
+Namespace(ciscoDir='', ciscoFile='tests/test_policy.CONFIG', color='black', cpNetObjFile='cp/default_r7730_network_objects.xml', cpPortsFile='cp/default_r7730_service_objects.xml', debug=True, disableRules=False, export=False, filter=None, flattenInlineNetGroups=False, flattenInlineSvcGroups=False, forceLog=False, format='dbedit', installOn='My_Firewall', natInstallOn='vs01', output='tests/network_script_verify.txt', policy='My_Policy', search='', startIndex=0, stdout=False, summary=False, syntax='asa', verify=True)
+#[+] Importing all objects except groups.
+#[+] Importing Checkpoint network objects
+#[+] Importing all hosts.
+#[-]   Importing: <ASAObjNetwork # 3 'object network myHost'>
+#[+] Importing all networks.
+#[-]   Importing: <ASAObjNetwork # 7 'object network myLAN'>
+#[-]   Importing: <ASAObjNetwork # 10 'object network myDMZ'>
+#[+] Importing all ranges.
+#[+] Fixing duplicate names
+#[+] Fixing duplicate IP addresses
+#[+] Fixing duplicate subnets
+#[+] Fixing duplicate ranges
+#[+] Importing Checkpoint ports objects
+#[+] Adding ICMP Aliases
+#[-] Adding Alias "unreachable" on object "dest-unreach"
+#[-] Adding Alias "mobile-redirect" on object "redirect"
+#[-] Adding Alias "echo" on object "echo-request"
+#[-] Adding Alias "parameter-problem" on object "param-prblm"
+#[-] Adding Alias "information-request" on object "info-req"
+#[-] Adding Alias "information-reply" on object "info-reply"
+#[+] Importing all single ports objects.
+#[+] Importing all port ranges objects.
+#[-]   Importing: <ASAObjService # 14 'object service MyInternalPorts'>
+#[+] Importing all net/host/range groups.
+#[-]   Importing: <ASAObjGroupNetwork # 18 'object-group network MyInternal'>
+#[-] Adding member myLAN to group MyInternal
+#[-] Adding member myDMZ to group MyInternal
+#[-]   Importing: <ASAObjGroupNetwork # 22 'object-group network MyAdmins'>
+#[-] Adding member myHost to group MyAdmins
+#[-] Warning: Could not find object "10.0.1.101" (host). The script will create it.
+#[-] Adding member H_10.0.1.101 to group MyAdmins
+#[+] Importing all port groups.
+#[-]   Importing: <ASAObjGroupService # 26 'MyCustomAppPorts'>
+#[-] Warning: Could not find object "tcp/8194-8198" (range). The script will create it.
+#[-] Adding member TCP_8194-8198 to group MyCustomAppPorts
+#[-] Warning: Could not find object "tcp/4209-4220" (range). The script will create it.
+#[-] Adding member TCP_4209-4220 to group MyCustomAppPorts
+#[-] Adding member ldap to group MyCustomAppPorts
+#[+] Importing all protocol groups.
+#[+] Importing all NAT rules.
+#[+] Importing all firewall rules. (access-list)
+#[-] Warning: Could not find object "any" (host). The script will create it.
+#[-] Warning: Could not find object "any" (ip). The script will create it.
+#[-] Warning: Could not find object "10.0.1.10" (host). The script will create it.
+#[-] Warning: Could not find object "any" (icmp). The script will create it.
+#[-] Adding Alias "any" on object "icmp-proto"
+#[+] Importing all firewall rules. (ip access-list)
+#[+] Merging redundant ACL rules
+#[-] Merging: ACLRule(name=lan,src=myLAN,dst=any,port=http;https,action=permit,pol=My_Policy,inst=My_Firewall,disabled=False,desc=LAN access to internet)
+#[-] With:    ACLRule(name=lan,src=myLAN,dst=any,port=ftp,action=permit,pol=My_Policy,inst=My_Firewall,disabled=False,desc=)
+#[-] Adding CiscoLine "<ASAAclLine # 45 'access-list lan extended permit tcp object myLAN any4 eq ftp'>" on object "lan"
+#[-] Result:  ACLRule(name=lan,src=myLAN,dst=any,port=http;https;ftp,action=permit,pol=My_Policy,inst=My_Firewall,disabled=False,desc=LAN access to internet)
+#[+] Exporting to verify format
+# Summary of the findings in "tests/test_policy.CONFIG"
+#
+# Number of names (before merge/cleanup): 0
+# Number of names (after merge/cleanup): 0
+# Number of hosts (imported from cisco file): 1
+# Number of hosts (imported from checkpoint xml): 1
+# Number of hosts (dynamically created): 2
+# Number of hosts (after merge/cleanup): 1
+# Number of subnet (imported from cisco file): 1
+# Number of subnet (imported from checkpoint xml): 2
+# Number of subnet (dynamically created): 0
+# Number of subnet (after merge/cleanup): 2
+# Number of range (imported from cisco file): 0
+# Number of range (imported from checkpoint xml): 0
+# Number of range (dynamically created): 0
+# Number of range (after merge/cleanup): 0
+# Number of subnet groups: 2
+# Number of service groups: 1
+# Number of nat rules: 0
+# Number of acl rules (not imported: established): 0
+# Number of acl rules (not imported: source port): 0
+# Number of acl rules (before merge/cleanup): 0
+# Number of acl rules (after merge/cleanup): 6
+# Number of single ports (imported from cisco file): 261
+# Number of single ports (imported from checkpoint xml): 0
+# Number of single ports (dynamically created): 0
+# Number of port range (imported from cisco file): 0
+# Number of port range (imported from checkpoint xml): 1
+# Number of port range (dynamically created): 2
+

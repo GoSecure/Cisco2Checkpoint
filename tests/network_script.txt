@@ -1,0 +1,213 @@
+# Creating new host: myHost
+create host_plain myHost
+modify network_objects myHost ipaddr 10.0.1.201
+modify network_objects myHost comments " description mdube's VM in lab"
+modify network_objects myHost color "black"
+update network_objects myHost
+# Creating new host: H_10.0.1.101
+create host_plain H_10.0.1.101
+modify network_objects H_10.0.1.101 ipaddr 10.0.1.101
+modify network_objects H_10.0.1.101 comments ""
+modify network_objects H_10.0.1.101 color "black"
+update network_objects H_10.0.1.101
+# Creating new host: H_10.0.1.10
+create host_plain H_10.0.1.10
+modify network_objects H_10.0.1.10 ipaddr 10.0.1.10
+modify network_objects H_10.0.1.10 comments ""
+modify network_objects H_10.0.1.10 color "black"
+update network_objects H_10.0.1.10
+# Creating new host: myHost
+create host_plain myHost
+modify network_objects myHost ipaddr 10.0.1.201
+modify network_objects myHost comments " description mdube's VM in lab"
+modify network_objects myHost color "black"
+update network_objects myHost
+# Creating new host: H_10.0.1.101
+create host_plain H_10.0.1.101
+modify network_objects H_10.0.1.101 ipaddr 10.0.1.101
+modify network_objects H_10.0.1.101 comments ""
+modify network_objects H_10.0.1.101 color "black"
+update network_objects H_10.0.1.101
+# Creating new host: H_10.0.1.10
+create host_plain H_10.0.1.10
+modify network_objects H_10.0.1.10 ipaddr 10.0.1.10
+modify network_objects H_10.0.1.10 comments ""
+modify network_objects H_10.0.1.10 color "black"
+update network_objects H_10.0.1.10
+# Creating new subnet: myLAN
+create network myLAN
+modify network_objects myLAN ipaddr 10.0.1.0
+modify network_objects myLAN netmask 255.255.255.0
+modify network_objects myLAN comments " description LAN"
+modify network_objects myLAN color "black"
+update network_objects myLAN
+# Creating new subnet: myDMZ
+create network myDMZ
+modify network_objects myDMZ ipaddr 10.0.2.0
+modify network_objects myDMZ netmask 255.255.255.0
+modify network_objects myDMZ comments " description DMZ"
+modify network_objects myDMZ color "black"
+update network_objects myDMZ
+# Creating new network group: MyInternal
+create network_object_group MyInternal
+modify network_objects MyInternal comments ""
+modify network_objects MyInternal color "black"
+addelement network_objects MyInternal '' network_objects:myLAN
+addelement network_objects MyInternal '' network_objects:myDMZ
+update network_objects MyInternal
+# Creating new network group: MyAdmins
+create network_object_group MyAdmins
+modify network_objects MyAdmins comments ""
+modify network_objects MyAdmins color "black"
+addelement network_objects MyAdmins '' network_objects:myHost
+addelement network_objects MyAdmins '' network_objects:H_10.0.1.101
+update network_objects MyAdmins
+# Creating new port range: MyInternalPorts
+create tcp_service MyInternalPorts
+modify services MyInternalPorts port 49152-65535
+modify services MyInternalPorts src_port 1-65535
+modify services MyInternalPorts comments " description Client to DCs tcp Ports"
+update services MyInternalPorts
+# Creating new port range: TCP_8194-8198
+create tcp_service TCP_8194-8198
+modify services TCP_8194-8198 port 8194-8198
+modify services TCP_8194-8198 comments ""
+update services TCP_8194-8198
+# Creating new port range: TCP_4209-4220
+create tcp_service TCP_4209-4220
+modify services TCP_4209-4220 port 4209-4220
+modify services TCP_4209-4220 comments ""
+update services TCP_4209-4220
+# Creating new port group: MyCustomAppPorts
+create service_group MyCustomAppPorts
+modify services MyCustomAppPorts comments ""
+modify services MyCustomAppPorts color "black"
+addelement services MyCustomAppPorts '' services:TCP_8194-8198
+addelement services MyCustomAppPorts '' services:TCP_4209-4220
+addelement services MyCustomAppPorts '' services:ldap
+update services MyCustomAppPorts
+# Creating new rule: lan
+addelement fw_policies ##My_Policy rule security_rule
+modify fw_policies ##My_Policy rule:0:name "lan"
+modify fw_policies ##My_Policy rule:0:comments "LAN access to internet"
+modify fw_policies ##My_Policy rule:0:disabled false
+modify fw_policies ##My_Policy rule:0:src rule_source
+modify fw_policies ##My_Policy rule:0:dst rule_destination
+modify fw_policies ##My_Policy rule:0:services rule_services
+modify fw_policies ##My_Policy rule:0:install rule_install
+addelement fw_policies ##My_Policy rule:0:src:'' network_objects:myLAN
+modify fw_policies ##My_Policy rule:0:src:op ''
+addelement fw_policies ##My_Policy rule:0:dst:'' globals:Any
+modify fw_policies ##My_Policy rule:0:dst:op ''
+addelement fw_policies ##My_Policy rule:0:services:'' services:http
+addelement fw_policies ##My_Policy rule:0:services:'' services:https
+addelement fw_policies ##My_Policy rule:0:services:'' services:ftp
+modify fw_policies ##My_Policy rule:0:services:op ''
+addelement fw_policies ##My_Policy rule:0:action accept_action:accept
+addelement fw_policies ##My_Policy rule:0:install:'' network_objects:My_Firewall
+rmbyindex fw_policies ##My_Policy rule:0:track 0
+addelement fw_policies ##My_Policy rule:0:track tracks:None
+addelement fw_policies ##My_Policy rule:0:time globals:Any
+# Creating new rule: lan
+addelement fw_policies ##My_Policy rule security_rule
+modify fw_policies ##My_Policy rule:1:name "lan"
+modify fw_policies ##My_Policy rule:1:comments "LAN access to DMZ "
+modify fw_policies ##My_Policy rule:1:disabled false
+modify fw_policies ##My_Policy rule:1:src rule_source
+modify fw_policies ##My_Policy rule:1:dst rule_destination
+modify fw_policies ##My_Policy rule:1:services rule_services
+modify fw_policies ##My_Policy rule:1:install rule_install
+addelement fw_policies ##My_Policy rule:1:src:'' network_objects:myLAN
+modify fw_policies ##My_Policy rule:1:src:op ''
+addelement fw_policies ##My_Policy rule:1:dst:'' network_objects:myDMZ
+modify fw_policies ##My_Policy rule:1:dst:op ''
+addelement fw_policies ##My_Policy rule:1:services:'' services:MyCustomAppPorts
+modify fw_policies ##My_Policy rule:1:services:op ''
+addelement fw_policies ##My_Policy rule:1:action accept_action:accept
+addelement fw_policies ##My_Policy rule:1:install:'' network_objects:My_Firewall
+rmbyindex fw_policies ##My_Policy rule:1:track 0
+addelement fw_policies ##My_Policy rule:1:track tracks:None
+addelement fw_policies ##My_Policy rule:1:time globals:Any
+# Creating new rule: lan
+addelement fw_policies ##My_Policy rule security_rule
+modify fw_policies ##My_Policy rule:2:name "lan"
+modify fw_policies ##My_Policy rule:2:comments "Admin access"
+modify fw_policies ##My_Policy rule:2:disabled false
+modify fw_policies ##My_Policy rule:2:src rule_source
+modify fw_policies ##My_Policy rule:2:dst rule_destination
+modify fw_policies ##My_Policy rule:2:services rule_services
+modify fw_policies ##My_Policy rule:2:install rule_install
+addelement fw_policies ##My_Policy rule:2:src:'' network_objects:MyAdmins
+modify fw_policies ##My_Policy rule:2:src:op ''
+addelement fw_policies ##My_Policy rule:2:dst:'' globals:Any
+modify fw_policies ##My_Policy rule:2:dst:op ''
+addelement fw_policies ##My_Policy rule:2:services:'' globals:Any
+modify fw_policies ##My_Policy rule:2:services:op ''
+addelement fw_policies ##My_Policy rule:2:action accept_action:accept
+addelement fw_policies ##My_Policy rule:2:install:'' network_objects:My_Firewall
+rmbyindex fw_policies ##My_Policy rule:2:track 0
+addelement fw_policies ##My_Policy rule:2:track tracks:None
+addelement fw_policies ##My_Policy rule:2:time globals:Any
+# Creating new rule: dmz
+addelement fw_policies ##My_Policy rule security_rule
+modify fw_policies ##My_Policy rule:3:name "dmz"
+modify fw_policies ##My_Policy rule:3:comments "DMZ access to internet"
+modify fw_policies ##My_Policy rule:3:disabled false
+modify fw_policies ##My_Policy rule:3:src rule_source
+modify fw_policies ##My_Policy rule:3:dst rule_destination
+modify fw_policies ##My_Policy rule:3:services rule_services
+modify fw_policies ##My_Policy rule:3:install rule_install
+addelement fw_policies ##My_Policy rule:3:src:'' network_objects:myDMZ
+modify fw_policies ##My_Policy rule:3:src:op ''
+addelement fw_policies ##My_Policy rule:3:dst:'' network_objects:H_10.0.1.10
+modify fw_policies ##My_Policy rule:3:dst:op ''
+addelement fw_policies ##My_Policy rule:3:services:'' services:MyInternalPorts
+modify fw_policies ##My_Policy rule:3:services:op ''
+addelement fw_policies ##My_Policy rule:3:action accept_action:accept
+addelement fw_policies ##My_Policy rule:3:install:'' network_objects:My_Firewall
+rmbyindex fw_policies ##My_Policy rule:3:track 0
+addelement fw_policies ##My_Policy rule:3:track tracks:None
+addelement fw_policies ##My_Policy rule:3:time globals:Any
+# Creating new rule: outbound
+addelement fw_policies ##My_Policy rule security_rule
+modify fw_policies ##My_Policy rule:4:name "outbound"
+modify fw_policies ##My_Policy rule:4:comments "Internet access"
+modify fw_policies ##My_Policy rule:4:disabled false
+modify fw_policies ##My_Policy rule:4:src rule_source
+modify fw_policies ##My_Policy rule:4:dst rule_destination
+modify fw_policies ##My_Policy rule:4:services rule_services
+modify fw_policies ##My_Policy rule:4:install rule_install
+addelement fw_policies ##My_Policy rule:4:src:'' globals:Any
+modify fw_policies ##My_Policy rule:4:src:op ''
+addelement fw_policies ##My_Policy rule:4:dst:'' network_objects:MyInternal
+modify fw_policies ##My_Policy rule:4:dst:op ''
+addelement fw_policies ##My_Policy rule:4:services:'' services:icmp-proto
+modify fw_policies ##My_Policy rule:4:services:op ''
+addelement fw_policies ##My_Policy rule:4:action accept_action:accept
+addelement fw_policies ##My_Policy rule:4:install:'' network_objects:My_Firewall
+rmbyindex fw_policies ##My_Policy rule:4:track 0
+addelement fw_policies ##My_Policy rule:4:track tracks:None
+addelement fw_policies ##My_Policy rule:4:time globals:Any
+# Creating new rule: outbound
+addelement fw_policies ##My_Policy rule security_rule
+modify fw_policies ##My_Policy rule:5:name "outbound"
+modify fw_policies ##My_Policy rule:5:comments ""
+modify fw_policies ##My_Policy rule:5:disabled false
+modify fw_policies ##My_Policy rule:5:src rule_source
+modify fw_policies ##My_Policy rule:5:dst rule_destination
+modify fw_policies ##My_Policy rule:5:services rule_services
+modify fw_policies ##My_Policy rule:5:install rule_install
+addelement fw_policies ##My_Policy rule:5:src:'' network_objects:MyInternal
+modify fw_policies ##My_Policy rule:5:src:op ''
+addelement fw_policies ##My_Policy rule:5:dst:'' globals:Any
+modify fw_policies ##My_Policy rule:5:dst:op ''
+addelement fw_policies ##My_Policy rule:5:services:'' services:http
+addelement fw_policies ##My_Policy rule:5:services:'' services:https
+addelement fw_policies ##My_Policy rule:5:services:'' services:ftp
+modify fw_policies ##My_Policy rule:5:services:op ''
+addelement fw_policies ##My_Policy rule:5:action accept_action:accept
+addelement fw_policies ##My_Policy rule:5:install:'' network_objects:My_Firewall
+rmbyindex fw_policies ##My_Policy rule:5:track 0
+addelement fw_policies ##My_Policy rule:5:track tracks:None
+addelement fw_policies ##My_Policy rule:5:time globals:Any
+update_all
