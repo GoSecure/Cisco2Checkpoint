@@ -100,7 +100,9 @@ ICMP_DIC = { 'unreachable' : 'dest-unreach', \
              'mask-reply' : 'mask-reply', \
              'parameter-problem' : 'param-prblm', \
              'mobile-redirect' : 'redirect'}
-             
+
+# TODO: Update this with the defined reserved word list.
+# https://supportcenter.checkpoint.com/supportcenter/portal?eventSubmit_doGoviewsolutiondetails=&solutionid=sk40179
 ILLEGAL_DIC = { 'All-Perimeter' : 'All_Perimeter', \
                 'In-Domain' : 'In_Domain', \
                 'GigabitEthernet' : 'Gi', \
