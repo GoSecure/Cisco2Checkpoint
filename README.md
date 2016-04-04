@@ -7,23 +7,23 @@ The tool require Python 2.7 and a forked version of [ciscoconfparse](https://pyp
 
 ## Table of Contents
 
-  * [cisco2checkpoint migration tool](#cisco2checkpoint-migration-tool)
-        * [Features](#features)
-        * [Where do we start?](#where-do-we-start)
-          * [Step 1: Prepare](#step-1-prepare)
+* [cisco2checkpoint migration tool](#cisco2checkpoint-migration-tool)
+    * [Features](#features)
+    * [Where do we start?](#where-do-we-start)
+        * [Step 1: Prepare](#step-1-prepare)
             * [Migration type](#migration-type)
             * [Review config file](#review-config-file)
-          * [Step 2: Convert](#step-2-convert)
+        * [Step 2: Convert](#step-2-convert)
             * [Conversion: Clean install](#conversion-clean-install)
             * [Conversion: Existing install](#conversion-existing-install)
-          * [Step 3: Import](#step-3-import)
-          * [Step 4: Verify](#step-4-verify)
-          * [Step 5: Fix](#step-5-fix)
-        * [Help](#help)
-        * [Other features](#other-features)
-        * [Known limitations](#known-limitations)
-        * [Warning](#warning)
-        * [License](#license)
+        * [Step 3: Import](#step-3-import)
+        * [Step 4: Verify](#step-4-verify)
+        * [Step 5: Fix](#step-5-fix)
+* [Help](#help)
+* [Other features](#other-features)
+* [Known limitations](#known-limitations)
+* [Warning](#warning)
+* [License](#license)
 
 ## Features
 
