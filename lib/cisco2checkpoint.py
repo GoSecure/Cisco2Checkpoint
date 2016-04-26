@@ -1290,7 +1290,8 @@ class CiscoACLRule(CiscoGroup):
                 portList = port.split(' ')
                 ret = []
                 for p in portList:
-                    ret.append(self._getOrCreateMemberObj(port_m,proto,p))
+                    if p != '':
+                        ret.append(self._getOrCreateMemberObj(port_m,proto,p))
                 return ret
             elif port_m in ['neq','lt','gt']:
                 raise C2CException('Port method "%s" not implemented yet.' % \
