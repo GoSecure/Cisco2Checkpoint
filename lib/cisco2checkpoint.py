@@ -100,13 +100,13 @@ class CiscoObject():
         
     def _sanitizeName(self, name):
         if name != '' and name[0].isdigit():
-            if isinstance(obj, CiscoNet):
+            if isinstance(self, CiscoNet):
                 return NEW_NET_PREFIX+name
-            elif isinstance(obj, CiscoRange):
+            elif isinstance(self, CiscoRange):
                 return NEW_RANGE_PREFIX+name
-            elif isinstance(obj, (CiscoName, CiscoHost)):
+            elif isinstance(self, (CiscoName, CiscoHost)):
                 return NEW_HOST_PREFIX+name
-            elif isinstance(obj, (CiscoServiceGroup, CiscoNetGroup)): 
+            elif isinstance(self, (CiscoServiceGroup, CiscoNetGroup)): 
                 return NEW_GROUP_PREFIX+name
             elif isinstance(self,(CiscoServicePort,CiscoServiceRange)) \
                  and self.proto == 'tcp':
