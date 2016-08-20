@@ -887,6 +887,7 @@ _RE_SVCGROUP_CHILD_STR = r"""(?:                    # Non-capturing parentesis
 #   port-object range 1 1024                6
 #   group-object RPC_High_ports_TCP         7
 #   icmp-object echo-reply|time-exceeded|.. 8
+#
 (^\s+description\s+(?P<description0>.*)$)
 |(^\s+service-object\s+(?P<protocol1>{3})$)
 |(^\s+service-object\s+(?P<protocol2>{0})(?:\s+destination)?
@@ -939,21 +940,22 @@ class ASAObjGroupService(BaseCfgLine):
     def m_proto(self,mm_r):
         """
         """
-        return mm_r['protocol1'] or mm_r['protocol2'] or self.proto
+        return mm_r['protocol1'] or mm_r['protocol2'] or mm_r['protocol3'] \
+            or self.proto
 
     def m_proto_method(self,mm_r):
         if mm_r['protocol1']:
             return 'protocol'
         elif mm_r['protocol2'] or mm_r['protocol3']:
             return 'service-object'
-        elif self.proto:
-            return 'port-object'
-        elif mm_r['dst_object4']:
-            return 'object'
         elif mm_r['dst_group7']:
             return 'group'
+        elif mm_r['dst_object4']:
+            return 'object'
         elif mm_r['dst_icmp_msg8']:
             return 'icmp'
+        elif self.proto:
+            return 'port-object'
 
     def m_dst_port(self,mm_r):
         if mm_r['dst_port_op3']:
@@ -998,29 +1000,6 @@ class ASAObjGroupService(BaseCfgLine):
         """
         Return a list of objects which represent the protocol and ports 
         allowed by this object-group
-
-        # Examples                                  group_suffix
-        #   service-object icmp|ip|tcp|udp|..       1
-        #   service-object udp destination eq dns   2
-        #   service-object tcp eq 80                2
-        #   service-object tcp range 5000 5005      3
-        #   service-object object TCP_4443          4
-        #   port-object eq https                    5
-        #   port-object range 1 1024                6
-        #   group-object RPC_High_ports_TCP         7
-        #   icmp-object echo-reply|time-exceeded|.. 8
-        (^\s+description\s+(?P<description0>.*)$)
-        |(^\s+service-object\s+(?P<protocol1>{3}))
-        |(^\s+service-object\s+(?P<protocol2>{0})(?:\s+destination)?
-            \s+(?P<dst_port_op2>{1})\s+(?P<dst_port2>{2}))
-        |(^\s+service-object\s+(?P<protocol3>{0})(?:\s+destination)?
-            \s+(?P<dst_port_op3>range)\s+(?P<dst_port_low3>\d+)\s+(?P<dst_port_high3>\d+))
-        |(^\s+service-object\sobject\s+(?P<dst_object4>\S+))
-        |(^\s+port-object\s+(?P<dst_port_op5>{1})\s+(?P<dst_port5>{2}))
-        |(^\s+port-object\s+(?P<dst_port_op6>range)
-            \s+(?P<dst_port_low6>\d+)\s+(?P<dst_port_high6>\d+))
-        |(^\s+group-object\s+(?P<dst_group7>\S+))
-        |(^\s+icmp-object\s+(?P<dst_icmp_msg8>\S+))
         """
         retval = list()
         for obj in self.children:
@@ -1040,8 +1019,8 @@ class ASAObjGroupService(BaseCfgLine):
                 svc['dst_port'] = self.m_dst_port(mm_r)
                 svc['dst_port_method'] = self.m_dst_port_method(mm_r)
                 svc['dst_port_op'] = self.m_dst_port_op(mm_r)
-                svc['dst_port_low'] = mm_r['dst_port_low3']
-                svc['dst_port_high'] = mm_r['dst_port_high3']
+                svc['dst_port_low'] = mm_r['dst_port_low3'] or mm_r['dst_port_low6']
+                svc['dst_port_high'] = mm_r['dst_port_high3'] or mm_r['dst_port_low6']
         
                 # Make sure the service group was defined before
                 if self.m_dst_port_method(mm_r) in ['object','group']:

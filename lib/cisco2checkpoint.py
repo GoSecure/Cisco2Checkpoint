@@ -878,7 +878,10 @@ class CiscoNetGroup(CiscoGroup):
             CiscoGroup.__init__(self, c2c, parsedObj, name, None, desc, \
                                 alreadyExist, color)
             for mm_r in parsedObj.result_dict:
-                mem_method = mm_r['member_method']
+                if 'member_method' in mm_r.keys():
+                    mem_method = mm_r['member_method']
+                else:
+                    mem_method = None
                 if mem_method == 'host':
                     ipaddr = mm_r['ipaddr']
                     net_obj = self._getOrCreateMemberObj(mem_method,ipaddr)
@@ -894,6 +897,8 @@ class CiscoNetGroup(CiscoGroup):
                     self.addMember(net_obj)
                 elif mem_method == 'description':
                     pass
+                elif mem_method == None:
+                    print_msg('A null member was identifed in object "%s"' % parsedObj.text)
                 else:
                     raise C2CException('Unsupported group member method: %s'\
                                       % mem_method)
@@ -1247,6 +1252,9 @@ class CiscoACLRule(CiscoGroup):
             return [self._getOrCreateMemberObj('subnet',parsedObj.src_addr,netmask)]
         elif parsedObj.src_addr_method == 'remark':
             return None
+        elif type(parsedObj).__name__ == 'IOSACLLine' and \
+             parsedObj.type == 'standard':   # standard = any Source
+            return [self._getAnyAddr()]
         elif parsedObj.parent.type == 'standard':   # standard = any Source
             return [self._getAnyAddr()]
 
@@ -1283,8 +1291,12 @@ class CiscoACLRule(CiscoGroup):
         """
         proto = self._convertProto(parsedObj.proto)
         proto_m = parsedObj.proto_method
-        port = parsedObj.dst_port
-        port_m = parsedObj.dst_port_method
+        if type(parsedObj).__name__ != 'IOSACLLine':     # IOSACLLine does not have a port
+            port = parsedObj.dst_port
+            port_m = parsedObj.dst_port_method
+        else:
+            port = None
+            port_m = None
         if proto_m == 'proto':
             if port_m == 'eq':
                 portList = port.split(' ')
@@ -1668,7 +1680,10 @@ class Cisco2Checkpoint(CiscoObject):
         self._importProtoGroups(self.parser.getProtoGroups())
         self._importNatRules(self.parser.getNatRules())
         if loadACLRules:
-            self._importACLRules(self.parser.getACLRules())
+            if self.syntax == 'ios':
+                self._importACLRules(self.parser.getACLRules())
+            elif self.syntax == 'asa':
+                self._importASAACLRules(self.parser.getACLRules())
             self._importIPACLRules(self.parser.getIPACLRules())
             self._fixACLRuleRedundancy()
             if self.disableRules:
@@ -1768,6 +1783,16 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all firewall rules. (access-list)')
         aclNames = []
         self.aclRuImCt = 0
+        for acl in rules:
+            self.addObj(CiscoACLRule(self, acl, '', \
+                                     self.policy, self.installOn, \
+                                     forceLog = self.forceLog))
+            self.aclRuImCt += 1
+
+    def _importASAACLRules(self, rules):
+        print_msg('Importing all firewall rules. (access-list)')
+        aclNames = []
+        self.aclRuImCt = 0
         desc = None
         for acl in rules:
             if acl.type == 'remark':
@@ -1801,8 +1826,10 @@ class Cisco2Checkpoint(CiscoObject):
                     rem = child.remark
                 elif child.action in ['permit','deny']:
                     if child.established:
+                        print_msg('Rule with established keyword not imported: %s' % child.text)
                         self.aclRuEsCt += 1
                     elif child.src_port_method:
+                        print_msg('Rule with source port not imported: %s' % child.text)
                         self.aclRuSPCt += 1
                     else:
                         self.addObj(CiscoACLRule(self, child, rem, \

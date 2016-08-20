@@ -2008,6 +2008,14 @@ class IOSACLLine(BaseCfgLine):
         return mm_r['action0'] or mm_r['action1']
 
     @property
+    def type(self):
+        mm_r = self._mm_results
+        if mm_r['action0']:
+            return 'standard'
+        elif mm_r['action1']:
+            return 'extended'
+
+    @property
     def proto(self):
         """
         \s+(?:
@@ -2055,7 +2063,8 @@ class IOSACLLine(BaseCfgLine):
         elif method == 'object-group' or method == 'object':
             return None
         else:
-            raise ValueError("Cannot parse ACL source hostmask for '{0}'".format(self.text))
+            return None
+            #raise ValueError("Cannot parse ACL source hostmask for '{0}'".format(self.text))
 
     @property
     def src_addr_method(self):
@@ -2071,7 +2080,8 @@ class IOSACLLine(BaseCfgLine):
         elif (mm_r['src_network1'] or mm_r['src_hostmask1']):
             return 'network'
         else:
-            raise ValueError("Cannot parse ACL source address method for '{0}'".format(self.text))
+            return None
+            #raise ValueError("Cannot parse ACL source address method for '{0}'".format(self.text))
 
     @property
     def dst_addr(self):
@@ -2126,6 +2136,36 @@ class IOSACLLine(BaseCfgLine):
             return 'network'
         else:
             return None
+
+    @property
+    def log(self):
+        mm_r = self._mm_results
+        return mm_r['log0'] or mm_r['log1']
+
+    @property
+    def log_level(self):
+        mm_r = self._mm_results
+        return mm_r['log_level0'] or mm_r['log_level1']
+
+    @property
+    def log_interval(self):
+        mm_r = self._mm_results
+        return mm_r['log_interval0'] or mm_r['log_interval1']
+
+    @property
+    def disable(self):
+        mm_r = self._mm_results
+        return mm_r['disable0'] or mm_r['disable1']
+
+    @property
+    def inactive(self):
+        mm_r = self._mm_results
+        return mm_r['inactive0'] or mm_r['inactive1']
+
+    @property
+    def time_range(self):
+        mm_r = self._mm_results
+        return mm_r['time_range0'] or mm_r['time_range1']
 
     @property
     def result_dict(self):
