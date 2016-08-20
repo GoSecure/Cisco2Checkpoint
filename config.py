@@ -109,6 +109,7 @@ ILLEGAL_DIC = { 'All-Perimeter' : 'All_Perimeter', \
                 'HOST' : 'HST', \
                 '(' : '-', \
                 ')' : '', \
+                '-Nets' : '-N', \
               }    
              
 #
