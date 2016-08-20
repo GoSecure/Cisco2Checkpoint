@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Python version validation
 import sys
-if sys.version_info > (2,7,10):
+if sys.version_info > (2,7,13):
     print('Python version 2.7 is needed for this script')
     exit(1);
 
