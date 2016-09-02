@@ -1,4 +1,6 @@
-from ciscoconfparse import CiscoConfParse
+#!/usr/bin/python2
+# -*- coding: utf-8 -*-
+from ciscoconfparse_extension import CiscoConfParse
 from config import *
 import xml.etree.ElementTree as et
 import copy
@@ -1252,7 +1254,7 @@ class CiscoACLRule(CiscoGroup):
             return [self._getOrCreateMemberObj('subnet',parsedObj.src_addr,netmask)]
         elif parsedObj.src_addr_method == 'remark':
             return None
-        elif type(parsedObj).__name__ == 'IOSACLLine' and \
+        elif type(parsedObj).__name__ == 'IOSAclLine' and \
              parsedObj.type == 'standard':   # standard = any Source
             return [self._getAnyAddr()]
         elif parsedObj.parent.type == 'standard':   # standard = any Source
@@ -1291,7 +1293,7 @@ class CiscoACLRule(CiscoGroup):
         """
         proto = self._convertProto(parsedObj.proto)
         proto_m = parsedObj.proto_method
-        if type(parsedObj).__name__ != 'IOSACLLine':     # IOSACLLine does not have a port
+        if type(parsedObj).__name__ != 'IOSAclLine':     # IOSAclLine does not have a port
             port = parsedObj.dst_port
             port_m = parsedObj.dst_port_method
         else:
