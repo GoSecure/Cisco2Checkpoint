@@ -2,34 +2,23 @@
 # -*- coding: utf-8 -*-
 
 '''
-This script let someone import a Cisco config file and export it in a dbedit 
-compatible checkpoint config file
 @author: Martin Dubé
 @organization: GoSecure
-@license: Modified BSD License
 @contact: mdube@gosecure.ca
-Copyright (c) 2015, GoSecure
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-    * Neither the name of the <organization> nor the
-      names of its contributors may be used to endorse or promote products
-      derived from this software without specific prior written permission.
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+@license: GPLv3
+Copyright (c) 2016, GoSecure
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation version 3.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 # Python version validation
@@ -53,11 +42,10 @@ import os
 description = '''GoSecure cisco2checkpoint migration tool.
 
 Known limitations
- - The script convert "permit" to "allow" and "deny" to "deny". The script 
-   does generate rules with "reject" or checkpoint proprietary actions.
+ - The script convert "permit" to "allow" and "deny" to "deny".
  - The script support only None and Log tracking.
  - The script does not feed the "VPN" field.
- - The NAT rule translation is buggy.
+ - The NAT rule translation is buggy (for now).
  - The script does not support IPv6 (so any4 or any6 become any)
  - Redundant groups are not merged yet.
 '''
@@ -79,34 +67,6 @@ Export for dbedit
   ./cisco2checkpoint.py --ciscoFile 'cisco-run-conf.txt' --export
           --format dbedit --policy Standard --installOn fw01 --installOn fw02
 
-Advanced use          
-# Prerequisite: generate a custom list of network and services objects
-# so let the script know about already existing objects.
-#
-# Run the following on a SmartCenter server.
-echo "printxml network_objects" > printxml_netobj.txt
-echo "printxml services" > printxml_services.txt
-echo '<a>' > customer_network_objects.xml
-dbedit -local -f printxml_netobj.txt >> customer_network_objects.xml
-echo '</a>' >> customer_network_objects.xml
-echo '<a>' > customer_service_objects.xml
-dbedit -local -f printxml_services.txt >> customer_service_objects.xml
-echo '</a>' >> customer_service_objects.xml
-
-python2.7 c2c.py --cpPortsFile 'cp/customer_service_objects.xml' \
-    --cpNetObjFile 'cp/customer_network_objects.xml' \
-    --ciscoFile '_archive/cisco_customer/some_cisco_conf.txt' \
-    --syntax asa \
-    --verify \
-    --policy New_Policy --installOn MyFirewall \
-    --color 'blue' \
-    --startIndex 0 \
-    --format text \
-    --output 'network_script_verify.txt' \
-    --flattenInlineNetGroups \
-    --flattenInlineSvcGroups \
-    --debug \
-    > 'network_script_debug.txt'
 '''
 parser = argparse.ArgumentParser(
                     formatter_class=argparse.RawDescriptionHelpFormatter, \

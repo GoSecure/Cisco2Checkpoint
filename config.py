@@ -1,4 +1,29 @@
-C2C_VERSION = '1.0 - 2016-02-21'
+#!/usr/bin/python2
+# -*- coding: utf-8 -*-
+
+'''
+@author: Martin Dubé
+@organization: GoSecure
+@contact: mdube@gosecure.ca
+@license: GPLv3
+Copyright (c) 2016, GoSecure
+
+This file is part of cisco2checkpoint project.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation version 3.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
+C2C_VERSION = '1.1 - 2016-09-07'
 C2C_DEBUG = False
 
 #

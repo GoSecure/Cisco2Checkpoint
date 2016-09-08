@@ -1,12 +1,3 @@
-Known limitations
- - The script convert "permit" to "allow" and "deny" to "deny". The script 
-   does generate rules with "reject" or checkpoint proprietary actions.
- - The script support only None and Log tracking.
- - The script does not feed the "VPN" field.
- - The NAT rule translation is buggy.
- - The script does not support IPv6 (so any4 or any6 become any)
- - Redundant groups are not merged yet.
-
 TODO 
  - Add a "--no-any-any" feature to avoid import of any/any rules
  - Look for examples with client DATA
@@ -16,6 +7,12 @@ TODO
  - run pylint
  - run sphinx
 
+v1.1 - 2016-09-07
+Features:
+ - Clean the code for publishing
+ - Extracted changes made in ciscoconfparse to fit in a single file.
+ - ciscoconfparse is not a submodule to https://github.com/gosecure/ciscoconfparse
+ - License is now GPLv3 to match ciscoconfparse project.
 
 v1.0 - 2016-02-21
 Features:
