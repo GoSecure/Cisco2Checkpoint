@@ -12,9 +12,8 @@ The script was run on nearly 10 different configurations and lead to many succes
 ## Install
 
 ```
-git clone https://github.com/gosecure/cisco2checkpoint c2c
+git clone --recursive https://github.com/gosecure/cisco2checkpoint c2c
 cd c2c
-mkdir logs
 ```
 
 ## Simple use case: Fresh Install
