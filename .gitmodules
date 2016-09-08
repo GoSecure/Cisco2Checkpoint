@@ -1,0 +1,3 @@
+[submodule "lib/ciscoconfparse"]
+	path = lib/ciscoconfparse
+	url = https://github.com/GoSecure/ciscoconfparse

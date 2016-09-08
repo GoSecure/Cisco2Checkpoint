@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-
-from ciscoconfparse_extension import CiscoConfParse
+from ciscoconfparse_patch import CiscoConfParse
 from config import *
 import xml.etree.ElementTree as et
 import copy
