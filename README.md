@@ -66,7 +66,7 @@ python2.7 c2c.py --export \
     --syntax asa \
     --policy My_Policy \
     --installOn My_Firewall \
-    --output 'network_script.txt' \
+    --output 'network_script.txt' 
 ```
 
 As a result, the file `network_script.txt` is created and contains the converted policy. Upload the file on the SmartCenter server. Note that you will need a user with a bash shell to upload using SSH. To do so, run `chsh -s /bin/bash` and then logout to apply the change.
