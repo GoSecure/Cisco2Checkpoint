@@ -540,7 +540,7 @@ class ASAObjGroupNetwork(models_asa.ASAObjGroupNetwork):
                 net_obj['subnet'] = mm_r['network']
                 net_obj['mask'] = mm_r['netmask']
                 net_obj['member_method'] = 'subnet'
-            elif mm_r.get('group-object', None):
+            elif mm_r.get('groupobject', None):
                 net_obj['object_name'] = mm_r['groupobject']
                 net_obj['member_method'] = 'group-object'
                 # Make sure the network group was defined before
