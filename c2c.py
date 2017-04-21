@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Python version validation
 import sys
-if sys.version_info > (2,7,13):
+if sys.version_info > (2,7,14):
     print('Python version 2.7 is needed for this script')
     exit(1);
 
