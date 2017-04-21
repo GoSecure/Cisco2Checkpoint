@@ -37,7 +37,7 @@ import ciscoconfparse.ciscoconfparse as ccp
 _PORT_SIMPLE_OP = 'eq|neq|lt|gt'
 _PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'\
                 '|discard|domain|echo|exec|finger|tftp|ftp|ftp-data|gopher'\
-                '|h323|hostname|http|https|ident|imap4|irc|kerberos|klogin'\
+                '|h323|hostname|https|http|ident|imap4|irc|kerberos|klogin'\
                 '|kshell|ldap|ldaps|login|lotusnotes|lpd|netbios-ssn|nfs'\
                 '|nntp|ntp|pcanywhere-data|pim-auto-rp|pop2|pop3|pptp|rsh'\
                 '|rtsp|sip|smtp|sqlnet|ssh|sunrpc|tacacs|talk|telnet|uucp'\
