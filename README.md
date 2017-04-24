@@ -159,7 +159,7 @@ A config file is located in `./config.py`. Most users shouldn't need to modify i
 
 ## License
 
-cisco2checkpoint is licensed GPLv3; Copyright [GoSecure](https://gosecure.net), 2015-2016.
+cisco2checkpoint is licensed GPLv3; Copyright [GoSecure](https://gosecure.net), 2015-2017.
 
 
 ## Author and Thanks
