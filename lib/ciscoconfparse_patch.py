@@ -35,14 +35,15 @@ import ciscoconfparse.ciscoconfparse as ccp
 ##-------------  ASA and IOS supported protocols, operators and port names
 ##
 _PORT_SIMPLE_OP = 'eq|neq|lt|gt'
-_PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'\
-                '|discard|domain|echo|exec|finger|tftp|ftp|ftp-data|gopher'\
-                '|h323|hostname|https|http|ident|imap4|irc|kerberos|klogin'\
-                '|kshell|ldap|ldaps|login|lotusnotes|lpd|netbios-ssn|nfs'\
-                '|nntp|ntp|pcanywhere-data|pim-auto-rp|pop2|pop3|pptp|rsh'\
-                '|rtsp|sip|smtp|sqlnet|ssh|sunrpc|tacacs|talk|telnet|uucp'\
-                '|whois|www|netbios-ns|netbios-dgm|netbios-ss|snmptrap|snmp'\
+_PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'
+                '|discard|domain|echo|exec|finger|tftp|ftp-data|ftp|gopher'
+                '|h323|hostname|https|http|ident|imap4|irc|kerberos|klogin'
+                '|kshell|ldaps|ldap|login|lotusnotes|lpd|netbios-ssn|nfs'
+                '|nntp|ntp|pcanywhere-data|pim-auto-rp|pop2|pop3|pptp|rsh'
+                '|rtsp|sip|smtps|smtp|sqlnet|ssh|sunrpc|tacacs|talk|telnet|uucp'
+                '|whois|www|netbios-ns|netbios-dgm|netbios-ss|snmptrap|snmp'
                 '|syslog|isakmp|bootps|bootpc|radius|\d+'
+
 _ACL_PROTOCOLS = 'ip|tcp|udp|icmp|ahp|ah|eigrp|esp|gre|igmp|igrp|ipinip|ipsec'\
                 '|ospf|pcp|pim|pptp|snp|\d+'
 _ACL_ICMP_PROTOCOLS = 'alternate-address|conversion-error|echo-reply|echo'\
