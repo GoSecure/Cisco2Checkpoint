@@ -35,13 +35,13 @@ import ciscoconfparse.ciscoconfparse as ccp
 ##-------------  ASA and IOS supported protocols, operators and port names
 ##
 _PORT_SIMPLE_OP = 'eq|neq|lt|gt'
-_PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'
-                '|discard|domain|echo|exec|finger|tftp|ftp-data|ftp|gopher'
-                '|h323|hostname|https|http|ident|imap4|irc|kerberos|klogin'
-                '|kshell|ldaps|ldap|login|lotusnotes|lpd|netbios-ssn|nfs'
-                '|nntp|ntp|pcanywhere-data|pim-auto-rp|pop2|pop3|pptp|rsh'
-                '|rtsp|sip|smtps|smtp|sqlnet|ssh|sunrpc|tacacs|talk|telnet|uucp'
-                '|whois|www|netbios-ns|netbios-dgm|netbios-ss|snmptrap|snmp'
+_PORT_NAMES = r'aol|bgp|chargen|cifs|citrix-ica|cmd|ctiqbe|daytime'\
+                '|discard|domain|echo|exec|finger|tftp|ftp-data|ftp|gopher'\
+                '|h323|hostname|https|http|ident|imap4|irc|kerberos|klogin'\
+                '|kshell|ldaps|ldap|login|lotusnotes|lpd|netbios-ssn|nfs'\
+                '|nntp|ntp|pcanywhere-data|pim-auto-rp|pop2|pop3|pptp|rsh'\
+                '|rtsp|sip|smtps|smtp|sqlnet|ssh|sunrpc|tacacs|talk|telnet|uucp'\
+                '|whois|www|netbios-ns|netbios-dgm|netbios-ss|snmptrap|snmp'\
                 '|syslog|isakmp|bootps|bootpc|radius|\d+'
 
 _ACL_PROTOCOLS = 'ip|tcp|udp|icmp|ahp|ah|eigrp|esp|gre|igmp|igrp|ipinip|ipsec'\
@@ -59,6 +59,60 @@ _IP_PROTO = 'tcp|udp|tcp-udp'
 ##
 ##-------------  Extension of an ASA object network 
 ##
+
+##
+##-------------  ASA name
+##
+
+_RE_NAMEOBJECT_STR = r'''(?: # Non-capturing parentesis
+# Valid values
+#   name 1.2.3.4
+#   name 1.2.3.4 host1
+#   name 1.2.3.4 host1 description bla bla bla
+#
+  (^name
+  \s+(?P<addr>\d+\.\d+\.\d+\.\d+)
+  (?:\s+(?P<name>\S+))
+  (?:\s+description\s+(?P<desc>.+)$)?
+  )
+)
+'''
+_RE_NAMEOBJECT = re.compile(_RE_NAMEOBJECT_STR, re.VERBOSE)
+class ASAName(models_asa.ASACfgLine):
+
+    def __init__(self, *args, **kwargs):
+        """Accept an ASA line number and initialize family relationship
+        attributes"""
+        super(ASAName, self).__init__(*args, **kwargs)
+        mm = _RE_NAMEOBJECT.search(self.text)
+        if not (mm is None):
+            self._mm_results = mm.groupdict()   # All regex match results
+        else:
+            print self.text
+            raise ValueError
+
+        self.name = self._mm_results['name']
+        self.addr = self._mm_results['addr']
+        self.desc = self._mm_results['desc']
+
+    @classmethod
+    def is_object_for(cls, line="", re=re):
+        if 'name ' in line[0:5].lower():
+            return True
+        return False
+
+    @property
+    def result_dict(self):
+        mm_r = self._mm_results
+        retval = dict()
+
+        retval['name'] = self._mm_results['name']
+        retval['addr'] = self._mm_results['addr']
+        retval['desc'] = self._mm_results['desc']
+
+        return retval
+
+
 _RE_ASA_NETOBJ_CHILD_STR = r"""(?:
 (^\s+description(?P<description0>.+)$)
 |(^\s+host\s+(?P<host1>\S+)$)
@@ -1685,7 +1739,7 @@ def ConfigLineFactory(text="", comment_delimiter="!", syntax='ios'):
                   IOSIPAclChildLine, \
                   models_cisco.IOSCfgLine]
     elif syntax=='asa':
-        classes = [models_asa.ASAName, \
+        classes = [ASAName, \
                   ASAObjNetwork, \
                   ASAObjService, \
                   ASAObjGroupNetwork, \

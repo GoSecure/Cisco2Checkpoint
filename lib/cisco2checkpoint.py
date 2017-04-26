@@ -294,7 +294,11 @@ class CiscoGroup(CiscoObject):
             obj_list = self.c2c.findObjByNameType(name,'CiscoGreProto')
         elif type == 'host':
             name = v1
-            obj_list = self.c2c.findHostByAddr(name)
+            #obj_list = self.c2c.findHostByAddr(name)
+            if not isipaddress(name):
+                obj_list = self.c2c.findObjByName(name)
+            else:
+                obj_list = self.c2c.findHostByAddr(name)
         elif type == 'protocol':
             name = v1
             obj_list = self.c2c.findIcmpByName(name)
@@ -403,8 +407,44 @@ class CiscoGroup(CiscoObject):
             newObj = CiscoIcmp(self, name)
             self.c2c.addObj(newObj)
         elif type == 'host':
-            newObj = CiscoHost(self, None, NEW_HOST_PREFIX+v1, v1, \
-                               color=self.c2c.color)
+            name = v1
+            if not isipaddress(name):
+                names = self.c2c.findNameByName(v1)
+
+                # Check if a CiscoName exists with same IP. If so, overwrite the IP.
+                if len(names) == 1:
+                    ipAddr = names[0].ipAddr
+                    desc = names[0].desc
+                elif len(names) > 1:
+                    ipAddr = names[0].ipAddr
+                    desc = names[0].desc
+                    print_debug('WARNING: More than one name found with IP %s. The first occurence is taken.' % ipAddr)
+                else:
+                    raise C2CException('The name %s was not found.' % name)
+
+                newObj = CiscoHost(self.c2c, None, name, ipAddr, desc, \
+                                   color=self.c2c.color)
+            else:
+                names = self.c2c.findNameByAddr(v1)
+
+                # Check if a CiscoName exists with same IP. If so, overwrite the name and description.
+                if len(names) == 1:
+                    name = names[0].name
+                    ipAddr = v1
+                    desc = names[0].desc
+                elif len(names) > 1:
+                    name = names[0].name
+                    ipAddr = v1
+                    desc = names[0].desc
+                    print_debug('WARNING: More than one name found with IP %s. The first occurence is taken.' % ipAddr)
+                else:
+                    name = NEW_HOST_PREFIX+v1
+                    ipAddr = v1
+                    desc = None
+                    print_debug('No name found for IP %s. Using default naming convention' % ipAddr)
+                newObj = CiscoHost(self.c2c, None, name, ipAddr, desc, \
+                                   color=self.c2c.color)
+
             self.c2c.hostCrCt += 1
             self.c2c.addObj(newObj)
         elif type == 'subnet':
@@ -472,9 +512,11 @@ class CiscoGroup(CiscoObject):
 
     def _getOrCreateMemberObj(self,type,v1,v2=None,v3=None):
         obj = self._getMemberObj(type,v1,v2,v3)
-        if obj == None:
+        if obj is None:
             self._createMemberObj(type,v1,v2,v3)
             obj = self._getMemberObj(type,v1,v2,v3)
+            if obj is None:
+                raise C2CException('Could not create member: %s %s %s %s' % (type,v1,v2,v3))
         return obj
 
     def _getOrFailMemberObj(self,type,v1,v2=None,v3=None):
@@ -506,12 +548,20 @@ class CiscoName(CiscoObject):
     
     def __init__(self, c2c, parsedObj, name=None, ipAddr=None, desc=None, \
                  alreadyExist=False, color=None):
-        if parsedObj != None:
-            raise C2CException('CiscoName are deprecated. Not supported.')
-        if name != None:
+        if parsedObj.__class__.__name__ == 'ASAName':
+            print_debug(str(parsedObj))
+            name = parsedObj.name
+            self.ipAddr = parsedObj.addr
+            desc = parsedObj.desc
             CiscoObject.__init__(self, c2c, None, name, desc, alreadyExist, \
                                 color)
+        elif parsedObj.__class__.__name__ == 'ASACfgLine':
+            print_debug('The following line was not parsed as a ASAName: %s' % str(parsedObj))
+        elif parsedObj is None:
             self.ipAddr = ipAddr
+
+        CiscoObject.__init__(self, c2c, None, name, desc, alreadyExist, \
+                             color)
         self.dbClass = 'host_plain'
             
     def toString(self, indent='', verify=False):
@@ -522,16 +572,11 @@ class CiscoName(CiscoObject):
         return ret
 
     def toDBEdit(self):
-        return '# Creating new host: {0}\n'\
-                'create host_plain {0}\n'\
-                'modify network_objects {0} ipaddr {1}\n'\
-                'modify network_objects {0} comments "{2}"\n'\
-                'modify network_objects {0} color "{3}"\n'\
-                'update network_objects {0}\n'\
-                .format(self.name, self.ipAddr, self.getDesc(), self.color)
- 
+        return ''
+
     def toDBEditElement(self, groupName):
-        return "addelement network_objects {0} '' network_objects:{1}\n".format(groupName, self.name)
+        return ''
+
 
 class CiscoHost(CiscoName):
     """A cisco host"""
@@ -543,19 +588,19 @@ class CiscoHost(CiscoName):
             desc = parsedObj.description
             mm_r = parsedObj.result_dict
             ipAddr = mm_r['ipaddr']
-            CiscoName.__init__(self, c2c, None, name, ipAddr, desc, \
-                               alreadyExist, color)
-        else:
-            CiscoName.__init__(self, c2c, None, name, ipAddr, desc, \
-                               alreadyExist, color)
-                    
-    def toString(self,indent='',verify=False):
-        prefix = indent+self.getClass()
-        ret = prefix+"(name=%s,ipAddr=%s,desc=%s,alias=%s)\n" % (self.name,self.ipAddr,self.getDesc(),';'.join(self.alias))
-        if verify and self.getVerify():
-            ret += indent+self.getVerify()
-        return ret
+
+        CiscoName.__init__(self, c2c, None, name, ipAddr, desc, \
+                           alreadyExist, color)
         
+    def toDBEdit(self):
+        return '# Creating new host: {0}\n'\
+                'create host_plain {0}\n'\
+                'modify network_objects {0} ipaddr {1}\n'\
+                'modify network_objects {0} comments "{2}"\n'\
+                'modify network_objects {0} color "{3}"\n'\
+                'update network_objects {0}\n'\
+                .format(self.name, self.ipAddr, self.getDesc(), self.color)
+
     def toDBEditElement(self, groupName):
         return "addelement network_objects {0} '' network_objects:{1}\n".format(groupName, self.name)
 
@@ -1587,7 +1632,7 @@ class CiscoParser():
                 self.getPortGroups()
                 
     def getNameObjs(self):
-        return [obj for obj in self.parse.find_objects("^name")]
+        return [obj for obj in self.parse.find_objects("^name\s")]
         
     def getHostObjs(self):
         return [obj for obj in self.parse.find_objects(r"^object\snetwork") \
@@ -1689,10 +1734,10 @@ class Cisco2Checkpoint(CiscoObject):
         self.parser.parse(configFile, self.syntax)
         print_msg('Importing all objects except groups.')
         self._importCheckpointNetworkObjects(xmlNetworkObjectsFile)
+        self._importNames(self.parser.getNameObjs())
         self._importHosts(self.parser.getHostObjs())
         self._importNets(self.parser.getNetObjs())
         self._importRanges(self.parser.getRangeObjs())
-        #self._importNames(self.parser.getNameObjs())        # Names are Legacy. Do not import as objects.
         self._fixDuplicateNames()
         self._fixDuplicateIp()
         self._fixDuplicateSubnet()
@@ -1958,7 +2003,7 @@ class Cisco2Checkpoint(CiscoObject):
     def _fixDuplicateIp(self):
         print_msg('Fixing duplicate IP addresses')
         for obj in self.obj_list:
-            if isinstance(obj, (CiscoName,CiscoHost)):
+            if isinstance(obj, (CiscoHost)):
                 foundList = self.findHostByAddr(obj.ipAddr)
                 self._fixDuplicate(foundList, obj.ipAddr, obj.getClass())
         self.nameCt = len(self.findNewObjByType(['CiscoName']))
@@ -2111,6 +2156,16 @@ class Cisco2Checkpoint(CiscoObject):
                     if (obj.getClass() in NETOBJ_NAMED_CLASSES \
                         and (obj.name.lower() == name.lower() or name in obj.alias))]
     
+    def findNameByName(self,name):
+        return [obj for obj in self.obj_list \
+                    if (obj.getClass() == 'CiscoName' \
+                        and obj.name == name)]
+
+    def findNameByAddr(self,ipAddr):
+        return [obj for obj in self.obj_list \
+                    if (obj.getClass() == 'CiscoName' \
+                        and obj.ipAddr == ipAddr)]
+
     def findHostByAddr(self,ipAddr):
         return [obj for obj in self.obj_list \
                     if (obj.getClass() in HOST_CLASSES \

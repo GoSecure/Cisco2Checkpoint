@@ -96,14 +96,14 @@ SUPPORTED_PROTO = SUPPORTED_IP_PROTO + SUPPORTED_NO_IP_PROTO
 #
 # Some categories of classes to simplify searches
 #
-HOST_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost']
-NETOBJ_CLASSES = ['CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange']
+HOST_CLASSES = ['CiscoHost','CiscoAnyHost']
+NETOBJ_CLASSES = ['CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange']
 SVCOBJ_CLASSES = ['CiscoServicePort','CiscoServiceRange','CiscoServiceGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
 ANY_CLASSES = ['CiscoAnyHost', 'CiscoAnyIcmp', 'CiscoAnyPort']
 GROUP_CLASSES = ['CiscoNetGroup', 'CiscoServiceGroup']
 
 # Classes that have a name (searchable by name)
-NETOBJ_NAMED_CLASSES = ('CiscoName','CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange','CiscoNetGroup')
+NETOBJ_NAMED_CLASSES = ('CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange','CiscoNetGroup')
 SVCOBJ_NAMED_CLASSES = ['CiscoServicePort','CiscoServiceRange','CiscoServiceGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
 
 #
