@@ -376,35 +376,35 @@ class CiscoGroup(CiscoObject):
             
     def _createMemberObj(self, type, v1, v2=None, v3=None):
         if type == 'host' and v1 == 'any':
-            newObj = CiscoAnyHost(self)
+            newObj = CiscoAnyHost(self.c2c)
             self.c2c.addObj(newObj)
         elif type in SUPPORTED_IP_PROTO and v1 == 'any':
-            newObj = CiscoAnyPort(self)
+            newObj = CiscoAnyPort(self.c2c)
             self.c2c.addObj(newObj)
         elif type == 'ospf' and v1 == 'any':
-            newObj = CiscoOspfProto(self)
+            newObj = CiscoOspfProto(self.c2c)
             self.c2c.addObj(newObj)
         elif type == 'esp' and v1 == 'any':
-            newObj = CiscoEspProto(self)
+            newObj = CiscoEspProto(self.c2c)
             self.c2c.addObj(newObj)
         elif type in ['ah','ahp'] and v1 == 'any':
-            newObj = CiscoAHProto(self)
+            newObj = CiscoAHProto(self.c2c)
             self.c2c.addObj(newObj)
         elif type == 'vrrp' and v1 == 'any':
-            newObj = CiscoVrrpProto(self)
+            newObj = CiscoVrrpProto(self.c2c)
             self.c2c.addObj(newObj)
         elif type == 'skip' and v1 == 'any':
-            newObj = CiscoSkipProto(self)
+            newObj = CiscoSkipProto(self.c2c)
             self.c2c.addObj(newObj)
         elif type == 'gre' and v1 == 'any':
-            newObj = CiscoGreProto(self)
+            newObj = CiscoGreProto(self.c2c)
             self.c2c.addObj(newObj)
         elif type == 'icmp' and v1 == 'any':
-            newObj = CiscoAnyIcmp(self)
+            newObj = CiscoAnyIcmp(self.c2c)
             self.c2c.addObj(newObj)
         elif type == 'icmp' or type == 'icmp-object':
             name = v1
-            newObj = CiscoIcmp(self, name)
+            newObj = CiscoIcmp(self.c2c, name)
             self.c2c.addObj(newObj)
         elif type == 'host':
             name = v1
@@ -450,7 +450,7 @@ class CiscoGroup(CiscoObject):
         elif type == 'subnet':
             subnet,mask = v1,v2
             cidr = str(mask2cidr(mask))
-            newObj = CiscoNet(self, None, NEW_NET_PREFIX+subnet+'-'+cidr, \
+            newObj = CiscoNet(self.c2c, None, NEW_NET_PREFIX+subnet+'-'+cidr, \
                          subnet, mask, color=self.c2c.color)
             self.c2c.netCrCt += 1
             self.c2c.addObj(newObj)
@@ -458,7 +458,7 @@ class CiscoGroup(CiscoObject):
             proto,port = v1,v2
             port = self._convertPort(port)
             if proto in ['tcp','udp']:
-                newObj = CiscoServicePort(self, None, None, proto, port)
+                newObj = CiscoServicePort(self.c2c, None, None, proto, port)
                 self.c2c.singlePortCrCt += 1
                 self.c2c.addObj(newObj)
             elif proto == 'tcp-udp':
@@ -470,11 +470,11 @@ class CiscoGroup(CiscoObject):
                 ret2 = self._parseResult(obj_list2, name, 'udp')
                 
                 if ret1 == None:
-                    newObj = CiscoServicePort(self, None, None, 'tcp', port)
+                    newObj = CiscoServicePort(self.c2c, None, None, 'tcp', port)
                     self.c2c.singlePortCrCt += 1
                     self.c2c.addObj(newObj)
                 if ret2 == None:
-                    newObj = CiscoServicePort(self, None, None, 'udp', port)
+                    newObj = CiscoServicePort(self.c2c, None, None, 'udp', port)
                     self.c2c.singlePortCrCt += 1
                     self.c2c.addObj(newObj)
         elif type == 'range':        # port-object range X Y
@@ -482,15 +482,15 @@ class CiscoGroup(CiscoObject):
             first = self._convertPort(v2)
             last = self._convertPort(v3)
             if proto in ['tcp','udp']:            
-                newObj = CiscoServiceRange(self, None, None, proto, first, last)
+                newObj = CiscoServiceRange(self.c2c, None, None, proto, first, last)
                 self.c2c.portRangeCrCt += 1
                 self.c2c.addObj(newObj)
             elif proto == 'tcp-udp':
-                newObj = CiscoServiceRange(self, None, None, 'tcp', first, last)
+                newObj = CiscoServiceRange(self.c2c, None, None, 'tcp', first, last)
                 self.c2c.portRangeCrCt += 1
                 self.c2c.addObj(newObj)
 
-                newObj = CiscoServiceRange(self, None, None, 'udp', first, last)
+                newObj = CiscoServiceRange(self.c2c, None, None, 'udp', first, last)
                 self.c2c.portRangeCrCt += 1
                 self.c2c.addObj(newObj)
 # TEMPORARY COMMENTED
