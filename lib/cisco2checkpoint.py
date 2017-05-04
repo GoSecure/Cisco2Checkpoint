@@ -667,7 +667,7 @@ class CiscoRange(CiscoObject):
     def __init__(self, c2c, parsedObj, name=None, ipAddrFirst=None, \
                  ipAddrLast=None, desc=None, alreadyExist=False, color=None):
 
-        if portObj != None:
+        if parsedObj != None:
             name = parsedObj.name
             desc = parsedObj.description
             mm_r = parsedObj.result_dict
