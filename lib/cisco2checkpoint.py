@@ -1797,7 +1797,7 @@ class Cisco2Checkpoint(CiscoObject):
         print_msg('Importing all ranges.')
         self.rangeImCt = 0
         for r in ranges:
-            print_debug('  Importing: %r' % h)
+            print_debug('  Importing: %r' % r)
             self.addObj(CiscoRange(self, r, color=self.color))
             self.rangeImCt += 1
             
