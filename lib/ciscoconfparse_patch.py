@@ -528,7 +528,10 @@ _RE_ASA_NETOBJECT_STR = r"""(?:                         # Non-capturing parenthe
 |(^\s+network-object
     (?:\s+network)?
     \s+(?P<network>\d+\.\d+\.\d+\.\d+)
-    \s+(?P<netmask>\d+\.\d+\.\d+\.\d+))
+    \s+(?P<netmask1>\d+\.\d+\.\d+\.\d+))
+|(^\s+network-object
+    \s+(?P<name>\S+)
+    \s+(?P<netmask2>\d+\.\d+\.\d+\.\d+))
 |(^\s+network-object\s+object\s+(?P<object>\S+))
 |(^\s+group-object\s+(?P<groupobject>\S+))
 )                                                   # Close non-capture parens
@@ -561,7 +564,7 @@ class ASAObjGroupNetwork(models_asa.ASAObjGroupNetwork):
     def m_network_name_exist(self, name):
         group_ports = self.confobj.object_group_network.get(name, None) \
                 or self.confobj.object_network.get(name, None)
-                
+
         if name==self.name:
             ## Throw an error when importing self
             raise ValueError('FATAL: Cannot recurse through group-object {0}'\
@@ -593,8 +596,22 @@ class ASAObjGroupNetwork(models_asa.ASAObjGroupNetwork):
                 net_obj['member_method'] = 'host'
             elif mm_r.get('network', None):
                 net_obj['subnet'] = mm_r['network']
-                net_obj['mask'] = mm_r['netmask']
+                net_obj['mask'] = mm_r['netmask1']
                 net_obj['member_method'] = 'subnet'
+            elif mm_r.get('name', None):
+                # Make sure the name was defined before
+                if not mm_r['name'] in self.confobj.names:
+                    raise ValueError("FATAL: Cannot find network object named {0}"\
+                                         .format(net_obj['object_name']))
+
+                if mm_r['netmask2'] == '255.255.255.255':
+                    net_obj['ipaddr'] = self.confobj.names[mm_r['name']]
+                    net_obj['mask'] = mm_r['netmask2']
+                    net_obj['member_method'] = 'host'
+                else:
+                    net_obj['subnet'] = self.confobj.names[mm_r['name']]
+                    net_obj['mask'] = mm_r['netmask2']
+                    net_obj['member_method'] = 'subnet'
             elif mm_r.get('groupobject', None):
                 net_obj['object_name'] = mm_r['groupobject']
                 net_obj['member_method'] = 'group-object'
