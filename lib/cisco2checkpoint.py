@@ -536,11 +536,19 @@ class CiscoGroup(CiscoObject):
             for o in obj:
                 self.addMember(o)
         elif obj is not None:
-            print_debug('Adding member %s to group %s' %(obj.name,self.name))
-            self.members.append(obj)
+            if not self.memberExist(obj):
+                print_debug('Adding member %s to group %s' %(obj.name,self.name))
+                self.members.append(obj)
         else:
             raise C2CException('Attempting to add a None object to group %s'\
                               % self.name)
+
+    # TODO: Make a better comparison than toString(). 
+    def memberExist(self, obj):
+        for member in self.members:
+            if member.toString() == obj.toString():
+                return True
+        return False
         
 class CiscoName(CiscoObject):
     """A cisco name"""
@@ -1691,6 +1699,7 @@ class Cisco2Checkpoint(CiscoObject):
     forceLog = None
     flattenInlineNetGroups = None
     flattenInlineSvcGroups = None
+    exportCPObj = None
     
     nameImCt = 0
     nameCt = 0
@@ -1782,7 +1791,7 @@ class Cisco2Checkpoint(CiscoObject):
         self.hostImCt = 0
         for h in hosts:
             print_debug('  Importing: %s' % h)
-            self.addObj(CiscoHost(self, h, color=self.color))
+            self.addObjOnce(CiscoHost(self, h, color=self.color))
             self.hostImCt += 1
 
     def _importNets(self, networks):
@@ -1790,7 +1799,7 @@ class Cisco2Checkpoint(CiscoObject):
         self.netImCt = 0
         for n in networks:
             print_debug('  Importing: %s' % n)
-            self.addObj(CiscoNet(self, n, color=self.color))
+            self.addObjOnce(CiscoNet(self, n, color=self.color))
             self.netImCt += 1
 
     def _importRanges(self, ranges):
@@ -1798,7 +1807,7 @@ class Cisco2Checkpoint(CiscoObject):
         self.rangeImCt = 0
         for r in ranges:
             print_debug('  Importing: %r' % r)
-            self.addObj(CiscoRange(self, r, color=self.color))
+            self.addObjOnce(CiscoRange(self, r, color=self.color))
             self.rangeImCt += 1
             
     def _importSinglePorts(self, ports):
@@ -2213,6 +2222,21 @@ class Cisco2Checkpoint(CiscoObject):
         if obj == None:
             raise C2CException('Cannot add a None object to c2c.')
         self.obj_list.append(obj)
+
+    def addObjOnce(self,obj):
+        if not self.objExist(obj):
+            self.addObj(obj)
+        else:
+            print_msg('Object "%s" was not imported as it already exist.' % obj.toString().strip())
+
+    def objExist(self,obj):
+        obj_list = self.findObjByName(obj.name)
+        if len(obj_list) == 0:
+            return False
+        elif len(obj_list) > 0:
+            if len(obj_list) > 1: print_debug('WARNING: Found more than 1 occurence of '\
+                                            'object "%s" in imported objects' % obj.name)
+            return True
         
     def removeObj(self,obj):
         self.obj_list.remove(obj)
@@ -2250,9 +2274,15 @@ class Cisco2Checkpoint(CiscoObject):
         
     def setFlattenInlineSvcGroups(self, flattenInlineSvcGroups):
         self.flattenInlineSvcGroups = flattenInlineSvcGroups
+
+    def setExportCPObj(self, exportCPObj):
+        self.exportCPObj = exportCPObj
         
     def getAllObjs(self, verify=False):
-        return ''.join([obj.toString('', verify) for obj in self.obj_list if obj.alreadyExist == False])
+        if self.exportCPObj:
+            return ''.join([obj.toString('', verify) for obj in self.obj_list])
+        else:
+            return ''.join([obj.toString('', verify) for obj in self.obj_list if obj.alreadyExist == self.exportCPObj])
         
     def getAllHosts(self):
         return ''.join([obj.toString() for obj in self.obj_list if (isinstance(obj, CiscoHost) or isinstance(obj, CiscoName))])

@@ -129,6 +129,8 @@ expGrp.add_argument('--flattenInlineNetGroups', action='store_true', dest='flatt
               help='Flatten groups with prefix DM_INLINE_NETWORK_ so members are added to firewall rules instead of the group.')
 expGrp.add_argument('--flattenInlineSvcGroups', action='store_true', dest='flattenInlineSvcGroups', default=False, \
               help='Flatten groups with prefix DM_INLINE_SERVICE_ so members are added to firewall rules instead of the group.')
+expGrp.add_argument('--export-cp-obj', action='store_true', dest='exportCPObj', default=False, \
+              help='Also export imported Checkpoint Objects.')
 
 args = parser.parse_args()
 
@@ -163,6 +165,7 @@ c2c.setDisableRules(args.disableRules)
 c2c.setACLRuleIndex(args.startIndex)
 c2c.setFlattenInlineNetGroups(args.flattenInlineNetGroups)
 c2c.setFlattenInlineSvcGroups(args.flattenInlineSvcGroups)
+c2c.setExportCPObj(args.exportCPObj)
 
 if args.ciscoFile != '':
     c2c.importConfig(args.cpPortsFile,args.cpNetObjFile,args.ciscoFile)
