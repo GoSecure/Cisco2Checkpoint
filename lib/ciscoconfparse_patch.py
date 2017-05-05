@@ -369,16 +369,17 @@ class ASAObjGroupProtocol(models_asa.BaseCfgLine):
 #
 _RE_ASA_SVCGROUP_CHILD_STR = r"""(?:                    # Non-capturing parentesis
 # TODO: Add support for source ports in this regex
-# Examples                                  group_suffix
-#   service-object icmp|ip|tcp|udp|..       1
-#   service-object udp destination eq dns   2
-#   service-object tcp eq 80                2
-#   service-object tcp range 5000 5005      3
-#   service-object object TCP_4443          4
-#   port-object eq https                    5
-#   port-object range 1 1024                6
-#   group-object RPC_High_ports_TCP         7
-#   icmp-object echo-reply|time-exceeded|.. 8
+# Examples                                              group_suffix
+#   service-object icmp|ip|tcp|udp|..                   1
+#   service-object udp destination eq dns               2
+#   service-object tcp eq 80                            2
+#   service-object tcp range 5000 5005                  3
+#   service-object object TCP_4443                      4
+#   port-object eq https                                5
+#   port-object range 1 1024                            6
+#   group-object RPC_High_ports_TCP                     7
+#   icmp-object echo-reply|time-exceeded|..             8
+#   service-object icmp echo-reply|time-exceeded|...    9
 #
 (^\s+description\s+(?P<description0>.*)$)
 |(^\s+service-object\s+(?P<protocol1>{3})$)
@@ -392,6 +393,7 @@ _RE_ASA_SVCGROUP_CHILD_STR = r"""(?:                    # Non-capturing parentes
     \s+(?P<dst_port_low6>\d+)\s+(?P<dst_port_high6>\d+))
 |(^\s+group-object\s+(?P<dst_group7>\S+))
 |(^\s+icmp-object\s+(?P<dst_icmp_msg8>\S+))
+|(^\s+service-object\sicmp\s+(?P<dst_icmp_msg9>\S+))
 )                                                   # Close non-capture parens
 """.format(_IP_PROTO,_PORT_SIMPLE_OP,_PORT_NAMES,_ACL_PROTOCOLS)
 _RE_ASA_SVCGROUP_CHILD = re.compile(_RE_ASA_SVCGROUP_CHILD_STR, re.VERBOSE)
@@ -438,7 +440,7 @@ class ASAObjGroupService(models_asa.ASAObjGroupService):
             return 'group'
         elif mm_r['dst_object4']:
             return 'object'
-        elif mm_r['dst_icmp_msg8']:
+        elif mm_r['dst_icmp_msg8'] or mm_r['dst_icmp_msg9']:
             return 'icmp'
         elif self.proto:
             return 'port-object'
@@ -449,7 +451,8 @@ class ASAObjGroupService(models_asa.ASAObjGroupService):
         elif mm_r['dst_port_op6']:
             return mm_r['dst_port_low6'] + ' ' + mm_r['dst_port_high6']
         return mm_r['dst_port2'] or mm_r['dst_port5'] \
-            or mm_r['dst_object4'] or mm_r['dst_group7'] or mm_r['dst_icmp_msg8']
+            or mm_r['dst_object4'] or mm_r['dst_group7'] or mm_r['dst_icmp_msg8'] \
+            or mm_r['dst_icmp_msg9']
 
     def m_dst_port_method(self,mm_r):
         if mm_r['dst_port_op2']:
@@ -463,7 +466,7 @@ class ASAObjGroupService(models_asa.ASAObjGroupService):
             return 'object'
         elif mm_r['dst_group7']:
             return 'group'
-        elif mm_r['dst_icmp_msg8']:
+        elif mm_r['dst_icmp_msg8'] or mm_r['dst_icmp_msg9']:
             return 'icmp'
 
     def m_dst_port_op(self,mm_r):
