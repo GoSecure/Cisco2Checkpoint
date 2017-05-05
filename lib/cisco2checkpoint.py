@@ -366,8 +366,8 @@ class CiscoGroup(CiscoObject):
         elif len(obj_list) > 1:
             print_debug('Warning: Found %i instances of "%s" (%s)'
                         % (len(obj_list),name,type))
-            for obj in obj_list:
-                print_debug(obj.toString('  '))
+            #for obj in obj_list:
+            #   print_debug(obj.toString('  '))
             return obj_list[0]
         else:
             print_debug('Warning: Could not find object "%s" (%s). '
