@@ -1755,8 +1755,8 @@ class Cisco2Checkpoint(CiscoObject):
         self._importSinglePorts(self.parser.getSinglePortObjs())
         self._importPortRanges(self.parser.getPortRangeObjs())
         self._importNetGroups(self.parser.getNetGroups())    
-        self._importPortGroups(self.parser.getPortGroups())
         self._importProtoGroups(self.parser.getProtoGroups())
+        self._importPortGroups(self.parser.getPortGroups())
         self._importNatRules(self.parser.getNatRules())
         if loadACLRules:
             if self.syntax == 'ios':

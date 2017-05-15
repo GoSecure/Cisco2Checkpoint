@@ -475,7 +475,8 @@ class ASAObjGroupService(models_asa.ASAObjGroupService):
 
     def m_service_name_exist(self,name):
         group_ports = self.confobj.object_group_service.get(name, None) \
-                or self.confobj.object_service.get(name, None)
+                or self.confobj.object_service.get(name, None) \
+                or self.confobj.object_group_protocol.get(name, None)
                 
         if name==self.name:
             ## Throw an error when importing self
@@ -985,6 +986,7 @@ class ASAConfigList(ccp.ASAConfigList):
         ### New Internal structures
         self._RE_NETS  = re.compile(r'^\s*object\s+network\s+(\S+)')
         self._RE_SVCS  = re.compile(r'^\s*object\s+service\s+(\S+)')
+        self._RE_OBJPRO = re.compile(r'^\s*object-group\s+protocol\s+(\S+)')
 
     @property
     def object_network(self):
@@ -1015,6 +1017,17 @@ class ASAConfigList(ccp.ASAConfigList):
             name = obj.re_match_typed(obj_rgx, group=1, result_type=str)
             retval[name] = obj
         return retval
+
+    @property
+    def object_group_protocol(self):
+        """Return a dictionary of name to object-group protocol mappings"""
+        retval = dict()
+        obj_rgx = self._RE_OBJPRO
+        for obj in self.CiscoConfParse.find_objects(obj_rgx):
+            name = obj.re_match_typed(obj_rgx, group=1, result_type=str)
+            retval[name] = obj
+        return retval
+
 
 ##
 ##-------------  IOS ACL object

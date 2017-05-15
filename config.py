@@ -97,14 +97,14 @@ SUPPORTED_PROTO = SUPPORTED_IP_PROTO + SUPPORTED_NO_IP_PROTO
 # Some categories of classes to simplify searches
 #
 HOST_CLASSES = ['CiscoHost','CiscoAnyHost']
-NETOBJ_CLASSES = ['CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange']
-SVCOBJ_CLASSES = ['CiscoServicePort','CiscoServiceRange','CiscoServiceGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
+#NETOBJ_CLASSES = ['CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange']
+#SVCOBJ_CLASSES = ['CiscoServicePort','CiscoServiceRange','CiscoServiceGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
 ANY_CLASSES = ['CiscoAnyHost', 'CiscoAnyIcmp', 'CiscoAnyPort']
-GROUP_CLASSES = ['CiscoNetGroup', 'CiscoServiceGroup']
+GROUP_CLASSES = ['CiscoNetGroup', 'CiscoServiceGroup', 'CiscoProtoGroup']
 
 # Classes that have a name (searchable by name)
 NETOBJ_NAMED_CLASSES = ('CiscoHost','CiscoAnyHost','CiscoNet','CiscoRange','CiscoNetGroup')
-SVCOBJ_NAMED_CLASSES = ['CiscoServicePort','CiscoServiceRange','CiscoServiceGroup','CiscoAnyPort','CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
+SVCOBJ_NAMED_CLASSES = ['CiscoServicePort','CiscoServiceRange','CiscoServiceGroup','CiscoAnyPort','CiscoProtoGroup', 'CiscoIcmp','CiscoAnyIcmp','CiscoEspProto','CiscoAHProto']
 
 #
 # Excluded ports: Ports here are proprietary to checkpoint. The reason why 
